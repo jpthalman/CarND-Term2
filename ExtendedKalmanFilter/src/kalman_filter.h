@@ -48,7 +48,11 @@ public:
     void Update(const Eigen::VectorXd &z, const SensorDataPacket::SensorType sensor_type);
 
 private:
+    // identity matrix
     const Eigen::MatrixXd I_ = Eigen::MatrixXd::Identity(2, 2);
+
+    /***/
+    Eigen::VectorXd CartesianToPolar(const Eigen::VectorXd &z);
 };
 
 
