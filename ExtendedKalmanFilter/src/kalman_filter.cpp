@@ -19,7 +19,7 @@ void KalmanFilter::Predict() {
 void KalmanFilter::Update(const Eigen::VectorXd &z, const SensorDataPacket::SensorType sensor_type) {
     VectorXd y;
     if (sensor_type == SensorDataPacket::RADAR)
-        y = z - H_ * CartesianToPolar(x_);
+        y = z - CartesianToPolar(x_);
     else
         y = z - H_ * x_;
 
