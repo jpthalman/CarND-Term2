@@ -9,15 +9,12 @@ using namespace Eigen;
 
 KalmanFilter::KalmanFilter() {}
 
-
 KalmanFilter::~KalmanFilter() {}
-
 
 void KalmanFilter::Predict() {
     x_ = H_ * x_;
     P_ = H_ * P_ * H_.transpose() + Q_;
 }
-
 
 void KalmanFilter::Update(const Eigen::VectorXd &z, const SensorDataPacket::SensorType sensor_type) {
     // TODO
