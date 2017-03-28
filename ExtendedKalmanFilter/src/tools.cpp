@@ -2,9 +2,12 @@
 // Created by jacob on 3/28/2017.
 //
 
+#include <iostream>
 #include "tools.h"
 
-Eigen::VectorXd CalculateRMSE(kVectorList &estimations, kVectorList &ground_truths) {
+using namespace Eigen;
+
+VectorXd CalculateRMSE(kVectorList &estimations, kVectorList &ground_truths) {
     size_t n_obs = estimations.size();
     Vector4d rmse;
     rmse << 0, 0, 0, 0;
@@ -21,7 +24,7 @@ Eigen::VectorXd CalculateRMSE(kVectorList &estimations, kVectorList &ground_trut
     // Calculate the squared residuals and accumulate in rmse
     Vector4d resid;
     for (size_t obs = 0; obs < n_obs; ++obs) {
-        resid = ground_truth[obs] - estimations[obs];
+        resid = ground_truths[obs] - estimations[obs];
         resid = resid.array() * resid.array();
         rmse += resid;
     }
@@ -33,8 +36,8 @@ Eigen::VectorXd CalculateRMSE(kVectorList &estimations, kVectorList &ground_trut
     return rmse.array().sqrt();
 }
 
-Eigen::MatrixXd CalculateJacobian(const Eigen::Vector4d &z) {
-    Matrix34d Hj;
+MatrixXd CalculateJacobian(const Vector4d &z) {
+    MatrixXd Hj;
 
     double px = z[0];
     double py = z[1];
@@ -42,7 +45,7 @@ Eigen::MatrixXd CalculateJacobian(const Eigen::Vector4d &z) {
     double vy = z[3];
 
     // Don't divide by zero.
-    if (abs(px + py) < 1e-5) {
+    if (fabs(px + py) < 1e-5) {
         std::cerr << "Tools::CalculateJacobian | Divide by zero error." << std::endl;
         return Hj;
     }
