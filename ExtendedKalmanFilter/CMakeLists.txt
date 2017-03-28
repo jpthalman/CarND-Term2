@@ -3,5 +3,5 @@ project(ExtendedKalmanFilter)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES src/main.cpp)
+set(SOURCE_FILES src/main.cpp src/sensor_data_packet.h src/kalman_filter.cpp src/kalman_filter.h)
 add_executable(ExtendedKalmanFilter ${SOURCE_FILES})
