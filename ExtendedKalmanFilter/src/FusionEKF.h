@@ -20,7 +20,7 @@ public:
     /**
      * Run the complete flow of the filter with this function.
      * */
-    Eigen::VectorXd ProcessMeasurement(const Eigen::VectorXd &z);
+    Eigen::VectorXd ProcessMeasurement(const SensorDataPacket &data);
 
 private:
     // Kalman filter predict and update math lives here
@@ -39,6 +39,10 @@ private:
     // sensor covariance matrices
     Eigen::MatrixXd R_laser_;
     Eigen::MatrixXd R_radar_;
+
+    // environment noise values
+    float noise_ax;
+    float noise_ay;
 };
 
 #endif //EXTENDEDKALMANFILTER_FUSIONEKF_H
