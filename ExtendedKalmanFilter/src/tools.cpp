@@ -3,21 +3,22 @@
 //
 
 #include <iostream>
+#include <cstdlib>
 #include "tools.h"
 
+using namespace std;
 using namespace Eigen;
 
 VectorXd CalculateRMSE(kVectorList &estimations, kVectorList &ground_truths) {
     size_t n_obs = estimations.size();
-    Vector4d rmse;
-    rmse << 0, 0, 0, 0;
+    Vector4d rmse = Vector4d::Zero();
 
     if (n_obs == 0) {
-        std::cerr << "Tools::CalculateRMSE | Number of estimations is zero." << std::endl;
+        cerr << "Tools::CalculateRMSE | Number of estimations is zero." << endl;
         return rmse;
     }
     if (n_obs != ground_truths.size()) {
-        std::cerr << "Tools::CalculateRMSE | Number of Estimations != Number of Ground Truths." << std::endl;
+        cerr << "Tools::CalculateRMSE | Number of Estimations != Number of Ground Truths." << endl;
         return rmse;
     }
 
@@ -36,17 +37,17 @@ VectorXd CalculateRMSE(kVectorList &estimations, kVectorList &ground_truths) {
     return rmse.array().sqrt();
 }
 
-MatrixXd CalculateJacobian(const Vector4d &z) {
-    MatrixXd Hj;
+MatrixXd calculate_jacobian(const VectorXd &z) {
+    MatrixXd Hj(3, 4);
 
-    double px = z[0];
-    double py = z[1];
-    double vx = z[2];
-    double vy = z[3];
+    double px = z(0);
+    double py = z(1);
+    double vx = z(2);
+    double vy = z(3);
 
     // Don't divide by zero.
-    if (fabs(px + py) < 1e-5) {
-        std::cerr << "Tools::CalculateJacobian | Divide by zero error." << std::endl;
+    if (abs(px + py) < 1e-5) {
+        cerr << "Tools::CalculateJacobian | Divide by zero error." << endl;
         return Hj;
     }
 
@@ -61,4 +62,36 @@ MatrixXd CalculateJacobian(const Vector4d &z) {
             py*(vx*py - vy*px)/d3, px*(vy*px - vx*py)/d3, px/d, py/d;
 
     return Hj;
+}
+
+void check_arguments(int argc, char* argv[]) {
+    string usage_instructions = "Usage instructions: ";
+    usage_instructions += argv[0];
+    usage_instructions += " path/to/infile.txt output.txt";
+
+    bool has_valid_args = false;
+
+    if (argc == 1)
+        cerr << usage_instructions << endl;
+    else if (argc == 2)
+        cerr << "Please include an output file.\n" << usage_instructions << endl;
+    else if (argc == 3)
+        has_valid_args = true;
+    else
+        cerr << "Too many arguments.\n" << usage_instructions << endl;
+
+    if (!has_valid_args)
+        exit(EXIT_FAILURE);
+}
+
+void check_files(ifstream &infile, string &in_name, ofstream &outfile, string &out_name) {
+    if (!infile.is_open()) {
+        cerr << "Cannot open input file: " << in_name << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (!outfile.is_open()) {
+        cerr << "Cannot open output file: " << out_name << endl;
+        exit(EXIT_FAILURE);
+    }
 }

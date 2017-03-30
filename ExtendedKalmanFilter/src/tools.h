@@ -6,6 +6,8 @@
 #define EXTENDEDKALMANFILTER_TOOLS_H
 
 #include <vector>
+#include <string>
+#include <fstream>
 #include "Eigen/Dense"
 
 using kVectorList = const std::vector<Eigen::VectorXd>;
@@ -19,6 +21,16 @@ Eigen::VectorXd CalculateRMSE(kVectorList &estimations, kVectorList &ground_trut
 /**
  * Given a radar sensor reading in polar coordinates, calculates the Jacobian matrix (Hj).
  * */
-Eigen::MatrixXd CalculateJacobian(const Eigen::VectorXd &z);
+Eigen::MatrixXd calculate_jacobian(const Eigen::VectorXd &z);
+
+/**
+ * Check command line arguments to see if they are valid.
+ * */
+void check_arguments(int argc, char* argv[]);
+
+/**
+ * Check input and output files to see if they are valid.
+ * */
+void check_files(std::ifstream &infile, std::string &in_name, std::ofstream &outfile, std::string &out_name);
 
 #endif //EXTENDEDKALMANFILTER_TOOLS_H
