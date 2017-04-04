@@ -1,8 +1,6 @@
 #include <iostream>
 #include <vector>
 #include "FusionEKF.h"
-#include "tools.h"
-#include "sensor_data_packet.h"
 
 using namespace std;
 using namespace Eigen;
@@ -73,12 +71,44 @@ int main(int argc, char* argv[]) {
     vector<VectorXd> ground_truths;
 
     VectorXd state;
+
+    // output the measurements
     for (size_t obs = 0; obs < measurement_packet_list.size(); ++obs) {
         state = ekf.ProcessMeasurement(measurement_packet_list[obs]);
 
         for (size_t k = 0; k < state.size(); ++k)
             outfile << state[k] << "\t";
 
+        if (measurement_packet_list[obs].sensor_type == SensorDataPacket::RADAR) {
+            outfile << measurement_packet_list[obs].values(0) << "\t"; // px
+            outfile << measurement_packet_list[obs].values(1) << "\t"; // py
+        }
+        else if (measurement_packet_list[obs].sensor_type == SensorDataPacket::LIDAR) {
+            // transform the measurements from polar to cartesian and output
+            double rho = measurement_packet_list[obs].values(0);
+            double phi = measurement_packet_list[obs].values(1);
 
+            outfile << rho * sin(phi) << "\t"; // px
+            outfile << rho * cos(phi) << "\t"; // py
+        }
+
+        // output the ground truth values
+        for (int i = 0; i < 4; ++i)
+            outfile << ground_truth_packet_list[obs].values(i) << "\t";
+        outfile << endl;
+
+        estimations.push_back(ekf.GetCurrentState());
+        ground_truths.push_back(ground_truth_packet_list[obs].values);
     }
+
+    cout << "Acuracy - RMSE:" << endl
+         << calculate_rmse(estimations, ground_truths) << endl;
+
+    // close files
+    if (outfile.is_open())
+        outfile.close();
+    if (infile.is_open())
+        infile.close();
+
+    return 0;
 }
