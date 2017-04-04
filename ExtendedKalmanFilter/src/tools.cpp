@@ -9,10 +9,11 @@
 using namespace std;
 using namespace Eigen;
 
-VectorXd CalculateRMSE(kVectorList &estimations, kVectorList &ground_truths) {
+VectorXd calculate_rmse(kVectorList &estimations, kVectorList &ground_truths) {
     size_t n_obs = estimations.size();
     Vector4d rmse = Vector4d::Zero();
 
+    // error handling
     if (n_obs == 0) {
         cerr << "Tools::CalculateRMSE | Number of estimations is zero." << endl;
         return rmse;
@@ -39,14 +40,21 @@ VectorXd CalculateRMSE(kVectorList &estimations, kVectorList &ground_truths) {
 
 MatrixXd calculate_jacobian(const VectorXd &z) {
     MatrixXd Hj(3, 4);
+    Hj <<   0.,0.,0.,0.,
+            0.,0.,0.,0.,
+            0.,0.,0.,0.;
 
-    double px = z(0);
-    double py = z(1);
-    double vx = z(2);
-    double vy = z(3);
+    double rho = z(0);
+    double phi = z(1);
+    double rho_dot = z(2);
+
+    double px = rho * sin(phi);
+    double py = rho * cos(phi);
+    double vx = rho_dot * sin(phi);
+    double vy = rho_dot * cos(phi);
 
     // Don't divide by zero.
-    if (abs(px + py) < 1e-5) {
+    if (abs(px) + abs(py) < 1e-5) {
         cerr << "Tools::CalculateJacobian | Divide by zero error." << endl;
         return Hj;
     }
