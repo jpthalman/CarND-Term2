@@ -11,23 +11,7 @@
 
 class KalmanFilter {
 public:
-    // state vector
-    Eigen::VectorXd x_;
-
-    // state covariance matrix
-    Eigen::MatrixXd P_;
-
-    // state transition matrix
-    Eigen::MatrixXd F_;
-
-    // environment covariance matrix
-    Eigen::MatrixXd Q_;
-
-    // sensor matrix
-    Eigen::MatrixXd H_;
-
-    // sensor covariance matrix
-    Eigen::MatrixXd R_;
+    friend class FusionEKF;
 
     /**
      * Constructor
@@ -48,8 +32,26 @@ public:
     void Update(const Eigen::VectorXd &z, const SensorDataPacket::SensorType sensor_type);
 
 private:
+    // state vector
+    Eigen::VectorXd x_;
+
+    // state covariance matrix
+    Eigen::MatrixXd P_;
+
+    // state transition matrix
+    Eigen::MatrixXd F_;
+
+    // environment covariance matrix
+    Eigen::MatrixXd Q_;
+
+    // sensor matrix
+    Eigen::MatrixXd H_;
+
+    // sensor covariance matrix
+    Eigen::MatrixXd R_;
+
     // identity matrix
-    const Eigen::MatrixXd I_ = Eigen::MatrixXd::Identity(2, 2);
+    const Eigen::MatrixXd I_ = Eigen::MatrixXd::Identity(4, 4);
 
     /***/
     Eigen::VectorXd CartesianToPolar(const Eigen::VectorXd &z);
