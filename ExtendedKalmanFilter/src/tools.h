@@ -16,7 +16,7 @@ using kVectorList = const std::vector<Eigen::VectorXd>;
  * Given a list of the estimations from the EKF, and a list of the corresponding ground truths, calcalates
  * the Root Mean Squared Error (RMSE) for each element of the vectors.
  * */
-Eigen::VectorXd CalculateRMSE(kVectorList &estimations, kVectorList &ground_truths);
+Eigen::VectorXd calculate_rmse(kVectorList &estimations, kVectorList &ground_truths);
 
 /**
  * Given a radar sensor reading in polar coordinates, calculates the Jacobian matrix (Hj).
