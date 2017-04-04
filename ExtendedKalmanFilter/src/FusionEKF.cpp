@@ -18,9 +18,9 @@ FusionEKF::FusionEKF() {
     R_laser_ = MatrixXd(2, 2);
     R_radar_ = MatrixXd(3, 3);
     kf_.x_ = Vector4d::Zero();
-    kf_.P_ = MatrixXd::Identity(4, 4);
     kf_.F_ = MatrixXd::Identity(4, 4);
     kf_.Q_ = Matrix4d::Zero();
+    kf_.P_ = MatrixXd::Identity(4, 4);
 
     // sensor matrix - laser
     H_laser_ << 1, 0, 0, 0,
@@ -53,6 +53,9 @@ VectorXd FusionEKF::ProcessMeasurement(const SensorDataPacket &data) {
     if (!is_initialized_) {
         if (data.sensor_type == SensorDataPacket::LIDAR) {
             kf_.x_ << data.values(0), data.values(1), 0., 0.;
+
+            // set velocity variances to 1000
+            kf_.P_(2, 2) = kf_.P_(3, 3) = 1000.0;
         }
         else if (data.sensor_type == SensorDataPacket::RADAR) {
             double rho = data.values(0);
@@ -90,10 +93,10 @@ VectorXd FusionEKF::ProcessMeasurement(const SensorDataPacket &data) {
     kf_.F_(0, 2) = kf_.F_(1, 3) = dt;
 
     // update non-zero state covariance values
-    kf_.Q_(0, 0) = dt4/4*noise_ax; kf_.Q_(0, 2) = dt3/2*noise_ax;
-    kf_.Q_(1, 1) = dt4/4*noise_ay; kf_.Q_(1, 3) = dt3/2*noise_ay;
-    kf_.Q_(2, 0) = dt3/2*noise_ax; kf_.Q_(2, 2) = dt2*noise_ax;
-    kf_.Q_(3, 1) = dt3/2*noise_ay; kf_.Q_(3, 3) = dt2*noise_ay;
+    kf_.Q_(0, 0) = dt4/4.0*noise_ax; kf_.Q_(0, 2) = dt3/2.0*noise_ax;
+    kf_.Q_(1, 1) = dt4/4.0*noise_ay; kf_.Q_(1, 3) = dt3/2.0*noise_ay;
+    kf_.Q_(2, 0) = dt3/2.0*noise_ax; kf_.Q_(2, 2) = dt2*noise_ax;
+    kf_.Q_(3, 1) = dt3/2.0*noise_ay; kf_.Q_(3, 3) = dt2*noise_ay;
 
     kf_.Predict();
 
@@ -119,5 +122,10 @@ VectorXd FusionEKF::ProcessMeasurement(const SensorDataPacket &data) {
         kf_.Update(data.values, data.sensor_type);
     }
 
+    return kf_.x_;
+}
+
+
+VectorXd FusionEKF::GetCurrentState() {
     return kf_.x_;
 }

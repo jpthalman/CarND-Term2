@@ -22,6 +22,11 @@ public:
      * */
     Eigen::VectorXd ProcessMeasurement(const SensorDataPacket &data);
 
+    /**
+     * Get the current state.
+     * */
+    Eigen::VectorXd GetCurrentState();
+
 private:
     // Kalman filter predict and update math lives here
     KalmanFilter kf_;
