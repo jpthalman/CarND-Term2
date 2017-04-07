@@ -66,6 +66,9 @@ VectorXd FusionEKF::ProcessMeasurement(const SensorDataPacket &data) {
                         rho * cos(phi), // py
                         rho_dot * sin(phi), // vx
                         rho_dot * cos(phi); //vy
+
+            // set velocity variances to 1000
+            kf_.P_(2, 2) = kf_.P_(3, 3) = 10.0;
         }
 
         previous_timestamp_ = data.timestamp;
