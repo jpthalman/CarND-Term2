@@ -35,8 +35,8 @@ VectorXd cartesian_to_polar(const VectorXd &z) {
 
     double d = sqrt(px*px + py*py);
     output <<   d, // rho
-            atan2(py, px), // phi
-            (px*vx + py*vy) / d; // rho_dot
+                atan2(py, px), // phi
+                (px*vx + py*vy) / d; // rho_dot
     return output;
 }
 
