@@ -52,8 +52,8 @@ private:
     Eigen::MatrixXd R_radar_;
 
     // environment noise values
-    float noise_ax;
-    float noise_ay;
+    float noise_ax_;
+    float noise_ay_;
 };
 
 #endif //EXTENDEDKALMANFILTER_FUSIONEKF_H

@@ -7,41 +7,38 @@
 
 using namespace Eigen;
 
+
 FusionEKF::FusionEKF() {
     is_initialized_ = false;
 
-    previous_timestamp_ = 0;
-
     // initializing matrices
-    H_laser_ = MatrixXd(2, 4);
-    H_radar_ = MatrixXd(3, 4);
-    R_laser_ = MatrixXd(2, 2);
-    R_radar_ = MatrixXd(3, 3);
     F_ = MatrixXd::Identity(4, 4);
     Q_ = Matrix4d::Zero();
 
     // sensor matrix - laser
+    H_laser_ = MatrixXd(2, 4);
     H_laser_ << 1, 0, 0, 0,
                 0, 1, 0, 0;
 
     // sensor matrix - radar
+    H_radar_ = MatrixXd(3, 4);
     // dynamically calculated
 
     // sensor covariance matrix - laser
-    R_laser_ << 0.0225, 0,
-                0, 0.0225;
+    R_laser_ = MatrixXd::Identity(2, 2) * 0.0225;
 
     // sensor covariance matrix - radar
-    R_radar_ << 0.09, 0, 0,
-                0, 0.0009, 0,
-                0, 0, 0.09;
+    R_radar_ = MatrixXd::Identity(3, 3) * 0.09;
+    R_radar_(1, 1) = 0.0009;
 
     // environment noise
-    noise_ax = 9.0;
-    noise_ay = 9.0;
+    noise_ax_ = 9.0;
+    noise_ay_ = 9.0;
 }
 
+
 FusionEKF::~FusionEKF() {}
+
 
 VectorXd FusionEKF::ProcessMeasurement(const SensorDataPacket &data) {
     /************************************************************************************
@@ -87,10 +84,10 @@ VectorXd FusionEKF::ProcessMeasurement(const SensorDataPacket &data) {
     F_(0, 2) = F_(1, 3) = dt;
 
     // update non-zero state covariance values
-    Q_(0, 0) = dt4/4.0*noise_ax; Q_(0, 2) = dt3/2.0*noise_ax;
-    Q_(1, 1) = dt4/4.0*noise_ay; Q_(1, 3) = dt3/2.0*noise_ay;
-    Q_(2, 0) = dt3/2.0*noise_ax; Q_(2, 2) = dt2*noise_ax;
-    Q_(3, 1) = dt3/2.0*noise_ay; Q_(3, 3) = dt2*noise_ay;
+    Q_(0, 0) = dt4/4.0*noise_ax_; Q_(0, 2) = dt3/2.0*noise_ax_;
+    Q_(1, 1) = dt4/4.0*noise_ay_; Q_(1, 3) = dt3/2.0*noise_ay_;
+    Q_(2, 0) = dt3/2.0*noise_ax_; Q_(2, 2) = dt2*noise_ax_;
+    Q_(3, 1) = dt3/2.0*noise_ay_; Q_(3, 3) = dt2*noise_ay_;
 
     kf_.Predict(F_, Q_);
 
