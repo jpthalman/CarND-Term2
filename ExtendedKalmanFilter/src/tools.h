@@ -12,7 +12,15 @@
 
 using kVectorList = const std::vector<Eigen::VectorXd>;
 
+/**
+ * Transforms a vector in polar coordinates to cartesian coordinates
+ * */
 Eigen::VectorXd polar_to_cartesian(const Eigen::VectorXd &v);
+
+/**
+ * Transforms a vector in cartesian coordinates to polar coordinates
+ * */
+Eigen::VectorXd cartesian_to_polar(const Eigen::VectorXd &z);
 
 /**
  * Given a list of the estimations from the EKF, and a list of the corresponding ground truths, calcalates

@@ -28,11 +28,13 @@ public:
      * */
     void Predict(const Eigen::MatrixXd &F, const Eigen::MatrixXd &Q);
 
-    /***/
+    /**
+     * Update the predicted state with a measurement from a sensor
+     * */
     void Update(
-            const Eigen::VectorXd &z,
-            const Eigen::MatrixXd &H,
-            const Eigen::MatrixXd &R,
+            const Eigen::VectorXd &z,  // measurement
+            const Eigen::MatrixXd &H,  // sensor matrix
+            const Eigen::MatrixXd &R,  // sensor covariance matrix
             const SensorDataPacket::SensorType sensor_type);
 
 private:
@@ -56,9 +58,6 @@ private:
 
     // identity matrix
     const Eigen::MatrixXd I_ = Eigen::MatrixXd::Identity(4, 4);
-
-    /***/
-    Eigen::VectorXd CartesianToPolar(const Eigen::VectorXd &z);
 };
 
 

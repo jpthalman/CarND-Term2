@@ -8,6 +8,7 @@
 using namespace std;
 using namespace Eigen;
 
+
 VectorXd polar_to_cartesian(const VectorXd &v) {
     double rho = v(0);
     double phi = v(1);
@@ -20,6 +21,25 @@ VectorXd polar_to_cartesian(const VectorXd &v) {
                     rho_dot * sin(phi); //vy
     return cartesian;
 }
+
+
+VectorXd cartesian_to_polar(const VectorXd &z) {
+    double px = z(0);
+    double py = z(1);
+    double vx = z(2);
+    double vy = z(3);
+
+    Vector3d output = Vector3d::Zero();
+    if (fabs(px) + fabs(py) < 1e-5)
+        return output;
+
+    double d = sqrt(px*px + py*py);
+    output <<   d, // rho
+            atan2(py, px), // phi
+            (px*vx + py*vy) / d; // rho_dot
+    return output;
+}
+
 
 VectorXd calculate_rmse(kVectorList &estimations, kVectorList &ground_truths) {
     size_t n_obs = estimations.size();
@@ -49,6 +69,7 @@ VectorXd calculate_rmse(kVectorList &estimations, kVectorList &ground_truths) {
     // Square root and return the result
     return rmse.array().sqrt();
 }
+
 
 MatrixXd calculate_jacobian(const VectorXd &z) {
     MatrixXd Hj(3, 4);
@@ -82,6 +103,7 @@ MatrixXd calculate_jacobian(const VectorXd &z) {
     return Hj;
 }
 
+
 void check_arguments(int argc, char* argv[]) {
     string usage_instructions = "Usage instructions: ";
     usage_instructions += argv[0];
@@ -101,6 +123,7 @@ void check_arguments(int argc, char* argv[]) {
     if (!has_valid_args)
         exit(EXIT_FAILURE);
 }
+
 
 void check_files(ifstream &infile, string &in_name, ofstream &outfile, string &out_name) {
     if (!infile.is_open()) {
