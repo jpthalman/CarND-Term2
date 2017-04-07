@@ -26,10 +26,14 @@ public:
     /**
      * Predict state k+1 based upon the current state vector (x_), state covariance (P_), and environment noise (Q_).
      * */
-    void Predict();
+    void Predict(const Eigen::MatrixXd &F, const Eigen::MatrixXd &Q);
 
     /***/
-    void Update(const Eigen::VectorXd &z, const SensorDataPacket::SensorType sensor_type);
+    void Update(
+            const Eigen::VectorXd &z,
+            const Eigen::MatrixXd &H,
+            const Eigen::MatrixXd &R,
+            const SensorDataPacket::SensorType sensor_type);
 
 private:
     // state vector
@@ -39,16 +43,16 @@ private:
     Eigen::MatrixXd P_;
 
     // state transition matrix
-    Eigen::MatrixXd F_;
+    // passed as argument to predict
 
     // environment covariance matrix
-    Eigen::MatrixXd Q_;
+    // passed as argument to predict
 
     // sensor matrix
-    Eigen::MatrixXd H_;
+    // passed as argument to update
 
     // sensor covariance matrix
-    Eigen::MatrixXd R_;
+    // passed as argument to update
 
     // identity matrix
     const Eigen::MatrixXd I_ = Eigen::MatrixXd::Identity(4, 4);
