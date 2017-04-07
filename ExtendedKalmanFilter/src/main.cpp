@@ -70,26 +70,25 @@ int main(int argc, char* argv[]) {
     vector<VectorXd> estimations;
     vector<VectorXd> ground_truths;
 
-    VectorXd state;
+    VectorXd current_state;
 
     // output the measurements
     for (size_t obs = 0; obs < measurement_packet_list.size(); ++obs) {
-        state = ekf.ProcessMeasurement(measurement_packet_list[obs]);
+        current_state = ekf.ProcessMeasurement(measurement_packet_list[obs]);
 
-        for (size_t k = 0; k < state.size(); ++k)
-            outfile << state[k] << "\t";
+        for (size_t k = 0; k < current_state.size(); ++k)
+            outfile << current_state[k] << "\t";
 
-        if (measurement_packet_list[obs].sensor_type == SensorDataPacket::RADAR) {
-            outfile << measurement_packet_list[obs].values(0) << "\t"; // px
-            outfile << measurement_packet_list[obs].values(1) << "\t"; // py
+        if (measurement_packet_list[obs].sensor_type == SensorDataPacket::LIDAR) {
+            outfile << measurement_packet_list[obs].values(0) << "\t"  // px
+                    << measurement_packet_list[obs].values(1) << "\t"; // py
         }
-        else if (measurement_packet_list[obs].sensor_type == SensorDataPacket::LIDAR) {
+        else if (measurement_packet_list[obs].sensor_type == SensorDataPacket::RADAR) {
             // transform the measurements from polar to cartesian and output
-            double rho = measurement_packet_list[obs].values(0);
-            double phi = measurement_packet_list[obs].values(1);
+            VectorXd cartesian = polar_to_cartesian(measurement_packet_list[obs].values);
 
-            outfile << rho * sin(phi) << "\t"; // px
-            outfile << rho * cos(phi) << "\t"; // py
+            outfile << cartesian(0) << "\t"  // px
+                    << cartesian(1) << "\t"; // py
         }
 
         // output the ground truth values
@@ -97,7 +96,7 @@ int main(int argc, char* argv[]) {
             outfile << ground_truth_packet_list[obs].values(i) << "\t";
         outfile << endl;
 
-        estimations.push_back(ekf.GetCurrentState());
+        estimations.push_back(current_state);
         ground_truths.push_back(ground_truth_packet_list[obs].values);
     }
 
