@@ -37,6 +37,12 @@ private:
     // previous timestamp. Used to measure delta-t
     long long previous_timestamp_;
 
+    // temporary matrices to pass to the kalman filter math
+    Eigen::MatrixXd F_;
+    Eigen::MatrixXd Q_;
+    Eigen::MatrixXd H_;
+    Eigen::MatrixXd R_;
+
     // sensor matrices
     Eigen::MatrixXd H_laser_;
     Eigen::MatrixXd H_radar_;
