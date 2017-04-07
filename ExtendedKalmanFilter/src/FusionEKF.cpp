@@ -104,24 +104,10 @@ VectorXd FusionEKF::ProcessMeasurement(const SensorDataPacket &data) {
      *                                      Update
      ************************************************************************************/
 
-    if (data.sensor_type == SensorDataPacket::LIDAR) {
-        kf_.H_ = H_laser_;
-        kf_.R_ = R_laser_;
+    kf_.H_ = (data.sensor_type == SensorDataPacket::LIDAR ? H_laser_ : calculate_jacobian(data.values));
+    kf_.R_ = (data.sensor_type == SensorDataPacket::LIDAR ? R_laser_ : R_radar_);
 
-        kf_.Update(data.values, data.sensor_type);
-    }
-    else if (data.sensor_type == SensorDataPacket::RADAR) {
-        Vector3d x_state;
-        x_state <<  data.values(0),
-                    data.values(1),
-                    data.values(2);
-
-        kf_.H_ = calculate_jacobian(x_state);
-        kf_.R_ = R_radar_;
-
-        kf_.Update(data.values, data.sensor_type);
-    }
-
+    kf_.Update(data.values, data.sensor_type);
     return kf_.x_;
 }
 
