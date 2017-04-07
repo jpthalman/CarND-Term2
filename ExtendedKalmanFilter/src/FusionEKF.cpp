@@ -21,7 +21,6 @@ FusionEKF::FusionEKF() {
                 0, 1, 0, 0;
 
     // sensor matrix - radar
-    H_radar_ = MatrixXd(3, 4);
     // dynamically calculated
 
     // sensor covariance matrix - laser
@@ -70,6 +69,7 @@ VectorXd FusionEKF::ProcessMeasurement(const SensorDataPacket &data) {
 
     // timestep expressed in seconds
     double dt = (data.timestamp - previous_timestamp_) / 1e6;
+    previous_timestamp_ = data.timestamp;
 
     // pre-compute values for covariance matrix
     double dt2 = dt * dt;
