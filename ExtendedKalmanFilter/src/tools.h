@@ -12,6 +12,8 @@
 
 using kVectorList = const std::vector<Eigen::VectorXd>;
 
+Eigen::VectorXd polar_to_cartesian(const Eigen::VectorXd &v);
+
 /**
  * Given a list of the estimations from the EKF, and a list of the corresponding ground truths, calcalates
  * the Root Mean Squared Error (RMSE) for each element of the vectors.

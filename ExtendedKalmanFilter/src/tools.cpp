@@ -3,11 +3,23 @@
 //
 
 #include <iostream>
-#include <cstdlib>
 #include "tools.h"
 
 using namespace std;
 using namespace Eigen;
+
+VectorXd polar_to_cartesian(const VectorXd &v) {
+    double rho = v(0);
+    double phi = v(1);
+    double rho_dot = v(2);
+
+    VectorXd cartesian = Vector4d::Zero();
+    cartesian <<    rho * cos(phi),  // px
+                    rho * sin(phi), // py
+                    rho_dot * cos(phi), // vx
+                    rho_dot * sin(phi); //vy
+    return cartesian;
+}
 
 VectorXd calculate_rmse(kVectorList &estimations, kVectorList &ground_truths) {
     size_t n_obs = estimations.size();
@@ -15,11 +27,11 @@ VectorXd calculate_rmse(kVectorList &estimations, kVectorList &ground_truths) {
 
     // error handling
     if (n_obs == 0) {
-        cerr << "Tools::CalculateRMSE | Number of estimations is zero." << endl;
+        cerr << "calculate_rmse | Number of estimations is zero." << endl;
         return rmse;
     }
     if (n_obs != ground_truths.size()) {
-        cerr << "Tools::CalculateRMSE | Number of Estimations != Number of Ground Truths." << endl;
+        cerr << "calculate_rmse | Number of Estimations != Number of Ground Truths." << endl;
         return rmse;
     }
 
@@ -44,18 +56,16 @@ MatrixXd calculate_jacobian(const VectorXd &z) {
             0.,0.,0.,0.,
             0.,0.,0.,0.;
 
-    double rho = z(0);
-    double phi = z(1);
-    double rho_dot = z(2);
+    VectorXd cartesian = polar_to_cartesian(z);
 
-    double px = rho * sin(phi);
-    double py = rho * cos(phi);
-    double vx = rho_dot * sin(phi);
-    double vy = rho_dot * cos(phi);
+    double px = cartesian(0);
+    double py = cartesian(1);
+    double vx = cartesian(2);
+    double vy = cartesian(3);
 
     // Don't divide by zero.
     if (abs(px) + abs(py) < 1e-5) {
-        cerr << "Tools::CalculateJacobian | Divide by zero error." << endl;
+        cerr << "calculate_jacobian | Divide by zero error." << endl;
         return Hj;
     }
 
