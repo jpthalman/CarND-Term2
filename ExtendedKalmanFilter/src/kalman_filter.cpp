@@ -45,7 +45,7 @@ void KalmanFilter::Update(
     MatrixXd Kp = P_ * Ht * S.inverse();  // 4x2
 
     x_ += Kp * y;  // 4x1
-    P_ = (I_ + Kp * H) * P_;  // 4x4
+    P_ = (I_ - Kp * H) * P_;  // 4x4
 
     std::cout << "::UPDATE::" << std::endl;
     std::cout << "State:" << std::endl << x_ << std::endl << std::endl;
