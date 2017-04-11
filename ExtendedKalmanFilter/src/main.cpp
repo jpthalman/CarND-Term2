@@ -72,13 +72,16 @@ int main(int argc, char* argv[]) {
 
     VectorXd current_state;
 
-    // output the measurements
+    // Process and predict from the measurements. Write pridictions and ground truths to the outfile.
     for (size_t obs = 0; obs < measurement_packet_list.size(); ++obs) {
+        // Predict the next state and update the belief with the sensor measurement
         current_state = ekf.ProcessMeasurement(measurement_packet_list[obs]);
 
+        // write prediction to the outfile
         for (size_t k = 0; k < current_state.size(); ++k)
             outfile << current_state[k] << "\t";
 
+        // write the sensor measurement to the outfile
         if (measurement_packet_list[obs].sensor_type == SensorDataPacket::LIDAR) {
             outfile << measurement_packet_list[obs].values(0) << "\t"  // px
                     << measurement_packet_list[obs].values(1) << "\t"; // py
