@@ -18,11 +18,13 @@ struct SensorDataPacket {
 
     Eigen::VectorXd observations;
     Eigen::VectorXd ground_truths;
-};
 
-/**
- * Read data from a line in a text file (istringstream) into a SensorDataPacket.
- * */
-void store_sensor_data(std::istringstream &iss, SensorDataPacket &data);
+    /**
+     * Constructors
+     * */
+    SensorDataPacket() = default;
+    SensorDataPacket(long long init_time, char init_sensor, Eigen::VectorXd init_obs, Eigen::VectorXd init_gt);
+    explicit SensorDataPacket(std::istringstream &iss);
+};
 
 #endif //UNSCENTEDKALMANFILTER_SENSOR_DATA_PACKET_H
