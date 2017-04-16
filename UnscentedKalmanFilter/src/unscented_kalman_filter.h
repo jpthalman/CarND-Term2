@@ -12,22 +12,7 @@
 
 class UnscentedKalmanFilter {
 public:
-    UnscentedKalmanFilter(int init_n_states, std::vector<double> noise_vector) :
-            n_states_(init_n_states),
-            x_(Eigen::VectorXd(init_n_states)),
-            P_(Eigen::MatrixXd::Identity(init_n_states, init_n_states)),
-            sigma_points_(Eigen::MatrixXd(init_n_states, 2 * init_n_states + 1))
-    {
-        // Initialize noise covariances of the state covariance.
-        // For example, if we have 3 states and one of them is noise, then P_ will look like:
-        //
-        // 1  0  0
-        // 0  1  0
-        // 0  0  noise_vector[0]^2
-        for (int idx = init_n_states - noise_vector.size(); idx < init_n_states; ++idx) {
-            P_(idx, idx) = pow(noise_vector[idx], 2);
-        }
-    }
+    UnscentedKalmanFilter(int init_n_states = 5, float std_acc = 0.2, float std_yawdd = 0.2);
 
     virtual ~UnscentedKalmanFilter();
 
@@ -37,9 +22,14 @@ public:
     void ProcessMeasurement(SensorDataPacket &data);
 
 private:
-    void GenerateSigmaPoints(Eigen::VectorXd x, Eigen::MatrixXd P, int lambda);
+    void GenerateSigmaPoints(Eigen::VectorXd &x, Eigen::MatrixXd &P, int lambda);
+    void PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, double delta_t);
+    void PredictMeanAndCovariance(Eigen::MatrixXd &sigma_pts);
 
     int n_states_;
+    int n_aug_states_;
+    int lambda_;
+
     bool is_initialized_ = false;
     long long prev_timestamp_;
 
@@ -49,8 +39,14 @@ private:
     // state covariance
     Eigen::MatrixXd P_;
 
+    // process noise covariance
+    Eigen::MatrixXd Q_;
+
     // sigma points
     Eigen::MatrixXd sigma_points_;
+
+    // weights for prediction step
+    Eigen::VectorXd weights_;
 };
 
 
