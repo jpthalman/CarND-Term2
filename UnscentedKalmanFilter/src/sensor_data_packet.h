@@ -17,6 +17,7 @@ struct SensorDataPacket {
     } sensor_type;
 
     Eigen::VectorXd observations;
+    Eigen::VectorXd predictions;
     Eigen::VectorXd ground_truths;
 
     /**

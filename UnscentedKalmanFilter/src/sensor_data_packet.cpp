@@ -17,6 +17,7 @@ SensorDataPacket::SensorDataPacket(
 
     observations = init_obs;
     ground_truths = init_gt;
+    predictions = Eigen::VectorXd::Zero(4);
 }
 
 SensorDataPacket::SensorDataPacket(std::istringstream &iss) {
@@ -48,4 +49,6 @@ SensorDataPacket::SensorDataPacket(std::istringstream &iss) {
     iss >> obs_timestamp >> px >> py >> vx >> vy;
     timestamp = obs_timestamp;
     ground_truths << px, py, vx, vy;
+
+    predictions = Eigen::VectorXd::Zero(4);
 }
