@@ -12,7 +12,7 @@
 
 class UnscentedKalmanFilter {
 public:
-    UnscentedKalmanFilter(int init_n_states = 5, float std_acc = 0.2, float std_yawdd = 0.2);
+    UnscentedKalmanFilter();
 
     virtual ~UnscentedKalmanFilter();
 
@@ -25,6 +25,8 @@ private:
     void GenerateSigmaPoints(Eigen::VectorXd &x, Eigen::MatrixXd &P, int lambda);
     void PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, double delta_t);
     void PredictMeanAndCovariance(Eigen::MatrixXd &sigma_pts);
+
+    void SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts, SensorDataPacket::SensorType sensor_type);
 
     int n_states_;
     int n_aug_states_;
@@ -41,6 +43,12 @@ private:
 
     // process noise covariance
     Eigen::MatrixXd Q_;
+
+    // radar noise
+    Eigen::MatrixXd R_radar_;
+
+    // lidar noise
+    Eigen::MatrixXd R_lidar_;
 
     // sigma points
     Eigen::MatrixXd sigma_points_;

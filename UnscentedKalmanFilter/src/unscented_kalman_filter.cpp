@@ -8,18 +8,31 @@
 using namespace Eigen;
 
 
-UnscentedKalmanFilter::UnscentedKalmanFilter(int init_n_states = 5, float std_acc = 0.2, float std_yawdd = 0.2) :
-        n_states_(init_n_states),
-        n_aug_states_(init_n_states + 2),
+UnscentedKalmanFilter::UnscentedKalmanFilter() :
+        n_states_(5),
+        n_aug_states_(7),
         lambda_(3 - n_aug_states_),
-        x_(Eigen::VectorXd(init_n_states)),
-        P_(Eigen::MatrixXd::Identity(init_n_states, init_n_states)),
-        Q_(Eigen::MatrixXd::Identity(2, 2)),
-        weights_(VectorXd(2 * init_n_states + 1))
+        x_(VectorXd(5)),
+        P_(MatrixXd::Identity(n_states_, n_states_)),
+        Q_(MatrixXd(2, 2)),
+        R_radar_(MatrixXd(3, 3)),
+        R_lidar_(MatrixXd(2, 2)),
+        weights_(VectorXd(2 * n_states_ + 1))
 {
     // set the values for the process covariance matrix
-    Q_(0, 0) = pow(std_acc, 2);
-    Q_(1, 1) = pow(std_yawdd, 2);
+    Q_ <<   pow(0.2, 2), 0,
+            0, pow(0.2, 2);
+
+    // instantiate the radar noise
+    // TODO: tune these parameters
+    R_radar_ << pow(0.3, 2), 0, 0,
+                0, pow(0.0175, 2), 0,
+                0, 0, pow(0.1, 2);
+
+    // instantiate the lidar noise
+    // TODO: tune these parameters
+    R_lidar_ << pow(0.15, 2), 0,
+                0, pow(0.15, 2);
 
     // initialize the weights for the prediction step
     weights_.fill(0.5 / (lambda_ + n_aug_states_));
@@ -158,4 +171,8 @@ void UnscentedKalmanFilter::PredictMeanAndCovariance(Eigen::MatrixXd &sigma_pts)
 
         P_ += weights_(i) * diff * diff.transpose();
     }
+}
+
+void SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts, SensorDataPacket::SensorType sensor_type) {
+
 }
