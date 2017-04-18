@@ -137,7 +137,8 @@ void BaseEKF::PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, const double delta_
 }
 
 void BaseEKF::SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts,
-                                                       const SensorDataPacket::SensorType sensor_type)
+                                            const Eigen::VectorXd &weights,
+                                            const SensorDataPacket::SensorType sensor_type)
 {
     throw NotImplementedException("This function needs to be implemented.");
 }

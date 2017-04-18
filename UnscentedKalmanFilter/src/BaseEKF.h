@@ -21,6 +21,7 @@ public:
 protected:
     virtual void PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, const double delta_t);
     virtual void SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts,
+                                               const Eigen::VectorXd &weights,
                                                const SensorDataPacket::SensorType sensor_type);
 
     int n_states_;
@@ -32,6 +33,14 @@ protected:
     // state covariance
     Eigen::MatrixXd P_;
 
+private:
+    void GenerateSigmaPoints(const Eigen::VectorXd &x, const Eigen::MatrixXd &P);
+    void GetMeanAndCovariance();
+
+    int lambda_;
+    bool is_initialized_;
+    long long prev_timestamp_;
+
     // process noise covariance
     Eigen::MatrixXd Q_;
 
@@ -40,14 +49,6 @@ protected:
 
     // weights for prediction step
     Eigen::VectorXd weights_;
-
-private:
-    void GenerateSigmaPoints(const Eigen::VectorXd &x, const Eigen::MatrixXd &P);
-    void GetMeanAndCovariance();
-
-    int lambda_;
-    bool is_initialized_;
-    long long prev_timestamp_;
 };
 
 
