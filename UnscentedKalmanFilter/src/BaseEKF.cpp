@@ -4,6 +4,7 @@
 
 #include "BaseEKF.h"
 #include "tools.h"
+#include "NotImplementedException.h"
 
 using namespace Eigen;
 
@@ -28,7 +29,8 @@ BaseEKF::BaseEKF(int n_states, std::vector<double> noise_stdevs, double lambda) 
     weights_(0) = lambda_ / (lambda_ + n_aug_states_);
 }
 
-void BaseEKF::ProcessMeasurement(SensorDataPacket &data) {
+void BaseEKF::ProcessMeasurement(SensorDataPacket &data)
+{
     /**********************************************************************************
      *                                    Initialize
      **********************************************************************************/
@@ -77,7 +79,13 @@ void BaseEKF::ProcessMeasurement(SensorDataPacket &data) {
     GenerateSigmaPoints(x_aug, P_aug);
 
     // transform the sigma points into the new space
-    PredictSigmaPoints(sigma_points_, dt);
+    try {
+        PredictSigmaPoints(sigma_points_, dt);
+    }
+    catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
     // predict the new mean and covariance with the new sigma points
     GetMeanAndCovariance();
@@ -93,7 +101,8 @@ void BaseEKF::ProcessMeasurement(SensorDataPacket &data) {
     return;
 }
 
-void BaseEKF::GenerateSigmaPoints(Eigen::VectorXd &x, Eigen::MatrixXd &P) {
+void BaseEKF::GenerateSigmaPoints(const Eigen::VectorXd &x, const Eigen::MatrixXd &P)
+{
     double scaling_factor = sqrt(n_aug_states_ + lambda_);
     MatrixXd P_sqrt = P.llt().matrixL();
 
@@ -101,7 +110,8 @@ void BaseEKF::GenerateSigmaPoints(Eigen::VectorXd &x, Eigen::MatrixXd &P) {
     sigma_points_ << x, (scaling_factor * P_sqrt).colwise() + x, (-scaling_factor * P_sqrt).colwise() + x;
 }
 
-void BaseEKF::GetMeanAndCovariance() {
+void BaseEKF::GetMeanAndCovariance()
+{
     x_ = sigma_points_ * weights_;
 
     P_.fill(0.0);
@@ -116,4 +126,15 @@ void BaseEKF::GetMeanAndCovariance() {
 
         P_ += weights_(i) * diff * diff.transpose();
     }
+}
+
+Eigen::MatrixXd BaseEKF::PredictSigmaPoints(const Eigen::MatrixXd &sigma_pts, const double delta_t)
+{
+    throw NotImplementedException("This function needs to be implemented.");
+}
+
+Eigen::MatrixXd BaseEKF::SigmaPointsToMeasurementSpace(const Eigen::MatrixXd &sigma_pts,
+                                                       const SensorDataPacket::SensorType sensor_type)
+{
+    throw NotImplementedException("This function needs to be implemented.");
 }

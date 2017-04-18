@@ -19,9 +19,9 @@ public:
     void ProcessMeasurement(SensorDataPacket &data);
 
 protected:
-    virtual Eigen::MatrixXd PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, double delta_t);
-    virtual Eigen::MatrixXd SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts,
-                                                          SensorDataPacket::SensorType sensor_type);
+    virtual Eigen::MatrixXd PredictSigmaPoints(const Eigen::MatrixXd &sigma_pts, const double delta_t);
+    virtual Eigen::MatrixXd SigmaPointsToMeasurementSpace(const Eigen::MatrixXd &sigma_pts,
+                                                          const SensorDataPacket::SensorType sensor_type);
 
     // state vector
     Eigen::VectorXd x_;
@@ -39,7 +39,7 @@ protected:
     Eigen::VectorXd weights_;
 
 private:
-    void GenerateSigmaPoints(Eigen::VectorXd &x, Eigen::MatrixXd &P);
+    void GenerateSigmaPoints(const Eigen::VectorXd &x, const Eigen::MatrixXd &P);
     void GetMeanAndCovariance();
 
     int n_states_;
