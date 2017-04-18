@@ -11,12 +11,15 @@
 class RadarLidarEKF : BaseEKF
 {
 public:
-    RadarLidarEKF() : BaseEKF(5, std::vector<double>{0.2, 0.2}, -5) {}
+    RadarLidarEKF(double std_rho, double std_phi, double std_drho);
 
 private:
     void PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, const double delta_t);
     void SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts,
-                                                  const SensorDataPacket::SensorType sensor_type);
+                                       const Eigen::VectorXd &weights,
+                                       const SensorDataPacket::SensorType sensor_type);
+
+    Eigen::MatrixXd R_radar_;
 };
 
 
