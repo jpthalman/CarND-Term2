@@ -7,5 +7,6 @@ set(SOURCE_FILES
         src/main.cpp
         src/unscented_kalman_filter.cpp
         src/sensor_data_packet.cpp
-        src/tools.cpp)
+        src/tools.cpp
+        src/BaseEKF.cpp)
 add_executable(UnscentedKalmanFilter ${SOURCE_FILES})
