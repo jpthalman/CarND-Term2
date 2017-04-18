@@ -36,13 +36,15 @@ void BaseEKF::ProcessMeasurement(SensorDataPacket &data)
      **********************************************************************************/
 
     if (!is_initialized_) {
-        if (data.sensor_type == SensorDataPacket::LIDAR) {
+        if (data.sensor_type == SensorDataPacket::LIDAR)
+        {
             x_.fill(0.0);
             x_(0) = data.observations(0);  // px
             x_(1) = data.observations(1);  // py
             x_(3) = atan2(x_(1), x_(0));   // yaw
         }
-        else if (data.sensor_type == SensorDataPacket::RADAR) {
+        else if (data.sensor_type == SensorDataPacket::RADAR)
+        {
             VectorXd cartesian = polar_to_cartesian(data.observations);
 
             x_.fill(0.0);
@@ -115,7 +117,8 @@ void BaseEKF::GetMeanAndCovariance()
     x_ = sigma_points_ * weights_;
 
     P_.fill(0.0);
-    for (int i = 0; i < 2 * n_aug_states_ + 1; ++i) {
+    for (int i = 0; i < 2 * n_aug_states_ + 1; ++i)
+    {
         VectorXd diff = sigma_points_.col(i) - x_;
 
         // normalize the angles
@@ -128,12 +131,12 @@ void BaseEKF::GetMeanAndCovariance()
     }
 }
 
-Eigen::MatrixXd BaseEKF::PredictSigmaPoints(const Eigen::MatrixXd &sigma_pts, const double delta_t)
+void BaseEKF::PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, const double delta_t)
 {
     throw NotImplementedException("This function needs to be implemented.");
 }
 
-Eigen::MatrixXd BaseEKF::SigmaPointsToMeasurementSpace(const Eigen::MatrixXd &sigma_pts,
+void BaseEKF::SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts,
                                                        const SensorDataPacket::SensorType sensor_type)
 {
     throw NotImplementedException("This function needs to be implemented.");
