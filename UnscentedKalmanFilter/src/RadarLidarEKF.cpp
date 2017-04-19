@@ -87,12 +87,51 @@ Eigen::MatrixXd RadarLidarEKF::SigmaPointsToMeasurementSpace(
             meas_space_sigma_pts(1, i) = atan2(py, px);                                    //phi
             meas_space_sigma_pts(2, i) = (px * vx + py * vy) / meas_space_sigma_pts(0, i); //r_dot
         }
-
-        return meas_space_sigma_pts;
     }  // end radar
     else if (sensor_type == SensorDataPacket::LIDAR)
     {
         meas_space_sigma_pts = sigma_pts.block(0, 0, 2, n_sigma_points);
-        return meas_space_sigma_pts;
     }  // end lidar
+
+    return meas_space_sigma_pts;
+}
+
+void RadarLidarEKF::ProcessSpaceMeanAndCovariance(
+        const Eigen::MatrixXd &sigma_pts,
+        Eigen::VectorXd &mean,
+        Eigen::MatrixXd &cov)
+{
+    mean = sigma_pts * weights_;
+
+    cov = MatrixXd(sigma_pts.rows(), sigma_pts.rows());
+    cov.fill(0.0);
+    for (int i = 0; i < 2 * n_aug_states_ + 1; ++i)
+    {
+        VectorXd diff = sigma_pts.col(i) - mean;
+
+        //angle normalization
+        while (diff(3)> M_PI) diff(3)-=2.*M_PI;
+        while (diff(3)<-M_PI) diff(3)+=2.*M_PI;
+
+        cov += weights_(i) * diff * diff.transpose();
+    }
+}
+
+void RadarLidarEKF::MeasurementSpaceMeanAndCovariance(
+        const Eigen::MatrixXd &sigma_pts,
+        const SensorDataPacket::SensorType &sensor_type,
+        Eigen::VectorXd &mean,
+        Eigen::MatrixXd &cov)
+{
+    mean = sigma_pts * weights_;
+
+    cov = MatrixXd(sigma_pts.rows(), sigma_pts.rows());
+    cov.fill(0.0);
+    for (int i = 0; i < 2 * n_aug_states_ + 1; ++i)
+    {
+        VectorXd diff = sigma_pts.col(i) - mean;
+        cov += weights_(i) * diff * diff.transpose();
+    }
+
+    cov += (sensor_type == SensorDataPacket::RADAR ? R_radar_ : R_lidar_);
 }
