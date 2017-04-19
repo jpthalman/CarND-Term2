@@ -19,13 +19,38 @@ public:
     void ProcessMeasurement(SensorDataPacket &data);
 
 protected:
-    virtual void PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, const double delta_t);
-    virtual void SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts,
-                                               const Eigen::VectorXd &weights,
-                                               const SensorDataPacket::SensorType sensor_type);
+    virtual Eigen::MatrixXd PredictSigmaPoints(
+            const Eigen::MatrixXd &sigma_pts,
+            const double delta_t);
 
-    int n_states_;
-    int n_aug_states_;
+    virtual Eigen::MatrixXd SigmaPointsToMeasurementSpace(
+            const Eigen::MatrixXd &sigma_pts,
+            const Eigen::VectorXd &weights,
+            const SensorDataPacket::SensorType sensor_type);
+
+    virtual void ProcessSpaceMeanAndCovariance(
+            const Eigen::MatrixXd &sigma_pts,
+            Eigen::VectorXd &mean,
+            Eigen::MatrixXd &cov);
+
+    virtual void MeasurementSpaceMeanAndCovariance(
+            const Eigen::MatrixXd &sigma_pts,
+            const SensorDataPacket::SensorType &sensor_type,
+            Eigen::VectorXd &mean,
+            Eigen::MatrixXd &cov);
+
+    const int n_states_;
+    const int n_aug_states_;
+
+    // weights for prediction step
+    Eigen::VectorXd weights_;
+
+private:
+    void GenerateSigmaPoints(const Eigen::VectorXd &x, const Eigen::MatrixXd &P);
+
+    int lambda_;
+    bool is_initialized_;
+    long long prev_timestamp_;
 
     // state vector
     Eigen::VectorXd x_;
@@ -33,22 +58,20 @@ protected:
     // state covariance
     Eigen::MatrixXd P_;
 
-private:
-    void GenerateSigmaPoints(const Eigen::VectorXd &x, const Eigen::MatrixXd &P);
-    void GetMeanAndCovariance();
-
-    int lambda_;
-    bool is_initialized_;
-    long long prev_timestamp_;
-
     // process noise covariance
     Eigen::MatrixXd Q_;
 
     // sigma points
-    Eigen::MatrixXd sigma_points_;
+    Eigen::MatrixXd X_sigma_points_;
 
-    // weights for prediction step
-    Eigen::VectorXd weights_;
+    // measurement space sigma points
+    Eigen::MatrixXd Z_sigma_points_;
+
+    // measurement space mean
+    Eigen::VectorXd z_;
+
+    // measurement space covariance
+    Eigen::MatrixXd S_;
 };
 
 

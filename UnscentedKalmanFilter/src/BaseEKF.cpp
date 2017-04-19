@@ -8,14 +8,16 @@
 
 using namespace Eigen;
 
-BaseEKF::BaseEKF(int n_states, std::vector<double> noise_stdevs, double lambda) :
+BaseEKF::BaseEKF(int n_states,
+                 std::vector<double> noise_stdevs,
+                 double lambda) :
         n_states_(n_states),
         n_aug_states_(n_states + noise_stdevs.size()),
         lambda_(lambda),
         x_(VectorXd(n_states)),
         P_(MatrixXd::Identity(n_states, n_states)),
         Q_(MatrixXd(noise_stdevs.size(), noise_stdevs.size())),
-        sigma_points_(MatrixXd(n_aug_states_, 2 * n_aug_states_ + 1)),
+        X_sigma_points_(MatrixXd(n_aug_states_, 2 * n_aug_states_ + 1)),
         weights_(VectorXd(2 * n_states + 1)),
         is_initialized_(false)
 {
@@ -29,7 +31,8 @@ BaseEKF::BaseEKF(int n_states, std::vector<double> noise_stdevs, double lambda) 
     weights_(0) = lambda_ / (lambda_ + n_aug_states_);
 }
 
-void BaseEKF::ProcessMeasurement(SensorDataPacket &data)
+void BaseEKF::ProcessMeasurement(
+        SensorDataPacket &data)
 {
     /**********************************************************************************
      *                                    Initialize
@@ -80,65 +83,82 @@ void BaseEKF::ProcessMeasurement(SensorDataPacket &data)
     // create the initial sigma points
     GenerateSigmaPoints(x_aug, P_aug);
 
-    // transform the sigma points into the new space
     try {
-        PredictSigmaPoints(sigma_points_, dt);
+        // predict the sigma points to t+1
+        X_sigma_points_ = PredictSigmaPoints(X_sigma_points_, dt);
+
+        // predict the new mean and covariance with the new sigma points
+        ProcessSpaceMeanAndCovariance(X_sigma_points_, x_, P_);
     }
     catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    // predict the new mean and covariance with the new sigma points
-    GetMeanAndCovariance();
 
     /**********************************************************************************
      *                                      Update
      **********************************************************************************/
 
-    // TODO
+
+    try {
+        // transform sigma points into the measurement space
+        Z_sigma_points_ = SigmaPointsToMeasurementSpace(X_sigma_points_, weights_, data.sensor_type);
+
+        // get the mean and covariance of the new sigma points
+        MeasurementSpaceMeanAndCovariance(X_sigma_points_, data.sensor_type, x_, P_);
+    }
+    catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+
 
     // store the UKF prediction in the referenced data packet
     data.predictions = x_;
     return;
 }
 
-void BaseEKF::GenerateSigmaPoints(const Eigen::VectorXd &x, const Eigen::MatrixXd &P)
+void BaseEKF::GenerateSigmaPoints(
+        const Eigen::VectorXd &x,
+        const Eigen::MatrixXd &P)
 {
     double scaling_factor = sqrt(n_aug_states_ + lambda_);
     MatrixXd P_sqrt = P.llt().matrixL();
 
-    sigma_points_ = MatrixXd(n_aug_states_, 2 * n_aug_states_ + 1);
-    sigma_points_ << x, (scaling_factor * P_sqrt).colwise() + x, (-scaling_factor * P_sqrt).colwise() + x;
+    X_sigma_points_ = MatrixXd(n_aug_states_, 2 * n_aug_states_ + 1);
+    X_sigma_points_ << x, (scaling_factor * P_sqrt).colwise() + x, (-scaling_factor * P_sqrt).colwise() + x;
 }
 
-void BaseEKF::GetMeanAndCovariance()
+MatrixXd BaseEKF::PredictSigmaPoints(
+        const Eigen::MatrixXd &sigma_pts,
+        const double delta_t)
 {
-    x_ = sigma_points_ * weights_;
-
-    P_.fill(0.0);
-    for (int i = 0; i < 2 * n_aug_states_ + 1; ++i)
-    {
-        VectorXd diff = sigma_points_.col(i) - x_;
-
-        // normalize the angles
-        while (diff(3) > M_PI)
-            diff(3) -= 2. * M_PI;
-        while (diff(3) < M_PI)
-            diff(3) += 2. * M_PI;
-
-        P_ += weights_(i) * diff * diff.transpose();
-    }
+    throw NotImplementedException("`PredictSigmaPoints` needs to be implemented.");
 }
 
-void BaseEKF::PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, const double delta_t)
+MatrixXd BaseEKF::SigmaPointsToMeasurementSpace(
+        const Eigen::MatrixXd &sigma_pts,
+        const Eigen::VectorXd &weights,
+        const SensorDataPacket::SensorType sensor_type)
 {
-    throw NotImplementedException("This function needs to be implemented.");
+    throw NotImplementedException("`SigmaPointsToMeasurementSpace` needs to be implemented.");
 }
 
-void BaseEKF::SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts,
-                                            const Eigen::VectorXd &weights,
-                                            const SensorDataPacket::SensorType sensor_type)
+void BaseEKF::ProcessSpaceMeanAndCovariance(
+        const Eigen::MatrixXd &sigma_pts,
+        Eigen::VectorXd &mean,
+        Eigen::MatrixXd &cov)
 {
-    throw NotImplementedException("This function needs to be implemented.");
+    throw NotImplementedException("`ProcessSpaceMeanAndCovariance` needs to be implemented.");
+}
+
+void BaseEKF::MeasurementSpaceMeanAndCovariance(
+        const Eigen::MatrixXd &sigma_pts,
+        const SensorDataPacket::SensorType &sensor_type,
+        Eigen::VectorXd &mean,
+        Eigen::MatrixXd &cov)
+{
+    throw NotImplementedException("`MeasurementSpaceMeanAndCovariance` needs to be implemented.");
 }
