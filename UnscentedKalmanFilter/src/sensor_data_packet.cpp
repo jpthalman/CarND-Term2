@@ -20,11 +20,12 @@ SensorDataPacket::SensorDataPacket(
     predictions = Eigen::VectorXd::Zero(4);
 }
 
-SensorDataPacket::SensorDataPacket(std::istringstream &iss) {
-    char sensor_type;
-    iss >> sensor_type;
+SensorDataPacket::SensorDataPacket(std::istringstream &iss)
+{
+    char sensor_type_char;
+    iss >> sensor_type_char;
 
-    if (sensor_type == 'L') {
+    if (sensor_type_char == 'L') {
         sensor_type = SensorDataPacket::LIDAR;
 
         double px, py;
@@ -33,7 +34,7 @@ SensorDataPacket::SensorDataPacket(std::istringstream &iss) {
         observations = Eigen::VectorXd(2);
         observations << px, py;
     }
-    else if (sensor_type == 'R') {
+    else if (sensor_type_char == 'R') {
         sensor_type = SensorDataPacket::RADAR;
 
         double rho, phi, drho;
@@ -48,6 +49,8 @@ SensorDataPacket::SensorDataPacket(std::istringstream &iss) {
 
     iss >> obs_timestamp >> px >> py >> vx >> vy;
     timestamp = obs_timestamp;
+
+    ground_truths = Eigen::VectorXd(4);
     ground_truths << px, py, vx, vy;
 
     predictions = Eigen::VectorXd::Zero(4);
