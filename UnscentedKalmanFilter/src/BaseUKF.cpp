@@ -2,13 +2,13 @@
 // Created by japata on 4/17/17.
 //
 
-#include "BaseEKF.h"
+#include "BaseUKF.h"
 #include "tools.h"
 #include "NotImplementedException.h"
 
 using namespace Eigen;
 
-BaseEKF::BaseEKF(int n_states,
+BaseUKF::BaseUKF(int n_states,
                  std::vector<float> noise_stdevs,
                  double lambda) :
         n_states_(n_states),
@@ -18,7 +18,7 @@ BaseEKF::BaseEKF(int n_states,
         P_(MatrixXd::Identity(n_states, n_states)),
         Q_(MatrixXd(noise_stdevs.size(), noise_stdevs.size())),
         X_sigma_points_(MatrixXd(n_aug_states_, 2 * n_aug_states_ + 1)),
-        weights_(VectorXd(2 * n_states + 1)),
+        weights_(VectorXd(2 * n_aug_states_ + 1)),
         is_initialized_(false)
 {
     // instantiate the process noise matrix
@@ -31,7 +31,7 @@ BaseEKF::BaseEKF(int n_states,
     weights_(0) = lambda_ / (lambda_ + n_aug_states_);
 }
 
-void BaseEKF::ProcessMeasurement(
+void BaseUKF::ProcessMeasurement(
         SensorDataPacket &data)
 {
     /**********************************************************************************
@@ -69,6 +69,7 @@ void BaseEKF::ProcessMeasurement(
 
     // calculate the time step in seconds since the last prediction
     double dt = (data.timestamp - prev_timestamp_) / 1e6;
+    prev_timestamp_ = data.timestamp;
 
     // create augmented state and covariance to include noise
     VectorXd x_aug = VectorXd(n_aug_states_);
@@ -117,6 +118,12 @@ void BaseEKF::ProcessMeasurement(
     CalculateKalmanGain();
 
     // update the state and covariance
+//    std::cout << K_.rows() << ' ' << K_.cols() << std::endl
+//              << data.observations.size() << std::endl << z_.size() << std::endl;
+//    std::cout << data.observations << std::endl << data.timestamp << std::endl << data.ground_truths << std::endl;
+//
+//    std::cout << (data.sensor_type == SensorDataPacket::RADAR ? "RADAR" : "LIDAR") << std::endl;
+
     x_ += K_ * (data.observations - z_);
     P_ += K_ * S_ * K_.transpose();
 
@@ -125,7 +132,7 @@ void BaseEKF::ProcessMeasurement(
     return;
 }
 
-void BaseEKF::GenerateSigmaPoints(
+void BaseUKF::GenerateSigmaPoints(
         const Eigen::VectorXd &x,
         const Eigen::MatrixXd &P)
 {
@@ -136,7 +143,7 @@ void BaseEKF::GenerateSigmaPoints(
     X_sigma_points_ << x, (scaling_factor * P_sqrt).colwise() + x, (-scaling_factor * P_sqrt).colwise() + x;
 }
 
-void BaseEKF::CalculateKalmanGain()
+void BaseUKF::CalculateKalmanGain()
 {
     MatrixXd cross_correlation = MatrixXd(x_.size(), z_.size());
     cross_correlation.fill(0.0);
@@ -151,14 +158,14 @@ void BaseEKF::CalculateKalmanGain()
     K_ = cross_correlation * S_.inverse();
 }
 
-MatrixXd BaseEKF::PredictSigmaPoints(
+MatrixXd BaseUKF::PredictSigmaPoints(
         const Eigen::MatrixXd &sigma_pts,
         const double delta_t)
 {
     throw NotImplementedException("`PredictSigmaPoints` needs to be implemented.");
 }
 
-MatrixXd BaseEKF::SigmaPointsToMeasurementSpace(
+MatrixXd BaseUKF::SigmaPointsToMeasurementSpace(
         const Eigen::MatrixXd &sigma_pts,
         const Eigen::VectorXd &weights,
         const SensorDataPacket::SensorType sensor_type)
@@ -166,7 +173,7 @@ MatrixXd BaseEKF::SigmaPointsToMeasurementSpace(
     throw NotImplementedException("`SigmaPointsToMeasurementSpace` needs to be implemented.");
 }
 
-void BaseEKF::ProcessSpaceMeanAndCovariance(
+void BaseUKF::ProcessSpaceMeanAndCovariance(
         const Eigen::MatrixXd &sigma_pts,
         Eigen::VectorXd &mean,
         Eigen::MatrixXd &cov)
@@ -174,7 +181,7 @@ void BaseEKF::ProcessSpaceMeanAndCovariance(
     throw NotImplementedException("`ProcessSpaceMeanAndCovariance` needs to be implemented.");
 }
 
-void BaseEKF::MeasurementSpaceMeanAndCovariance(
+void BaseUKF::MeasurementSpaceMeanAndCovariance(
         const Eigen::MatrixXd &sigma_pts,
         const SensorDataPacket::SensorType &sensor_type,
         Eigen::VectorXd &mean,

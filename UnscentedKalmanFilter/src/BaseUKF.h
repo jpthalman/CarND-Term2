@@ -2,17 +2,17 @@
 // Created by japata on 4/17/17.
 //
 
-#ifndef UNSCENTEDKALMANFILTER_BASEEKF_H
-#define UNSCENTEDKALMANFILTER_BASEEKF_H
+#ifndef UNSCENTEDKALMANFILTER_BASEUKF_H
+#define UNSCENTEDKALMANFILTER_BASEUKF_H
 
 #include <vector>
 #include "Eigen/Dense"
 #include "sensor_data_packet.h"
 
 
-class BaseEKF {
+class BaseUKF {
 public:
-    BaseEKF(int n_states, std::vector<float> noise_stdevs, double lambda);
+    BaseUKF(int n_states, std::vector<float> noise_stdevs, double lambda);
 
     Eigen::VectorXd GetCurrentState() const { return x_; }
     Eigen::MatrixXd GetCurrentCovariance() const { return P_; }
@@ -79,4 +79,4 @@ private:
 };
 
 
-#endif //UNSCENTEDKALMANFILTER_BASEEKF_H
+#endif //UNSCENTEDKALMANFILTER_BASEUKF_H
