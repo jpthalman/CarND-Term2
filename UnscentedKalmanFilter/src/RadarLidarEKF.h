@@ -11,7 +11,11 @@
 class RadarLidarEKF : BaseEKF
 {
 public:
-    RadarLidarEKF(double std_rho, double std_phi, double std_drho);
+    RadarLidarEKF::RadarLidarEKF(
+            std::vector<float> radar_noise,
+            std::vector<float> lidar_noise,
+            std::vector<float> process_noise,
+            double lambda);
 
 private:
     Eigen::MatrixXd PredictSigmaPoints(

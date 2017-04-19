@@ -6,14 +6,23 @@
 
 using namespace Eigen;
 
-RadarLidarEKF::RadarLidarEKF(double std_rho, double std_phi, double std_drho) :
-        BaseEKF(5, std::vector<double>{0.2, 0.2}, -5),
-        R_radar_(MatrixXd(3, 3))
+RadarLidarEKF::RadarLidarEKF(
+            std::vector<float> radar_noise,
+            std::vector<float> lidar_noise,
+            std::vector<float> process_noise,
+            double lambda) :
+        BaseEKF(5, process_noise, lambda),
+        R_radar_(MatrixXd(3, 3)),
+        R_lidar_(MatrixXd(2, 2))
 {
     // radar noise covariance matrix
-    R_radar_ << pow(std_rho, 2), 0, 0,
-                0, pow(std_phi, 2), 0,
-                0, 0, pow(std_drho, 2);
+    R_radar_ << pow(radar_noise[0], 2), 0, 0,
+                0, pow(radar_noise[1], 2), 0,
+                0, 0, pow(radar_noise[2], 2);
+
+    // lidar noise covariance matrix
+    R_lidar_ << pow(lidar_noise[0], 2), 0,
+                0, pow(lidar_noise[1], 2);
 }
 
 
@@ -83,9 +92,9 @@ Eigen::MatrixXd RadarLidarEKF::SigmaPointsToMeasurementSpace(
             double vy = v * sin(yaw);
 
             // measurement model
-            meas_space_sigma_pts(0, i) = sqrt(px*px + py*py);                              //r
-            meas_space_sigma_pts(1, i) = atan2(py, px);                                    //phi
-            meas_space_sigma_pts(2, i) = (px * vx + py * vy) / meas_space_sigma_pts(0, i); //r_dot
+            meas_space_sigma_pts(0, i) = sqrt(px*px + py*py);                              // rho
+            meas_space_sigma_pts(1, i) = atan2(py, px);                                    // phi
+            meas_space_sigma_pts(2, i) = (px * vx + py * vy) / meas_space_sigma_pts(0, i); // rho_dot
         }
     }  // end radar
     else if (sensor_type == SensorDataPacket::LIDAR)
