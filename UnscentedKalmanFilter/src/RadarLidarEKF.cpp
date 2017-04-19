@@ -17,7 +17,7 @@ RadarLidarEKF::RadarLidarEKF(double std_rho, double std_phi, double std_drho) :
 }
 
 
-void RadarLidarEKF::PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, const double delta_t)
+Eigen::MatrixXd RadarLidarEKF::PredictSigmaPoints(const Eigen::MatrixXd &sigma_pts, const double delta_t)
 {
     int n_sigma_points = 2 * n_aug_states_ + 1;
     MatrixXd sig_pred = MatrixXd(n_states_, n_sigma_points);
@@ -56,62 +56,43 @@ void RadarLidarEKF::PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, const double 
         sig_pred(4, i) = yawd;
     }
 
-    sigma_pts = sig_pred;
+    return sig_pred;
 }
 
-void RadarLidarEKF::SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts,
-                                                  const Eigen::VectorXd &weights,
-                                                  const SensorDataPacket::SensorType sensor_type)
+Eigen::MatrixXd RadarLidarEKF::SigmaPointsToMeasurementSpace(
+        const Eigen::MatrixXd &sigma_pts,
+        const Eigen::VectorXd &weights,
+        const SensorDataPacket::SensorType sensor_type)
 {
+    MatrixXd meas_space_sigma_pts;
+    int n_sigma_points = sigma_pts.cols();
+
     if (sensor_type == SensorDataPacket::RADAR)
     {
-        MatrixXd meas_space_sigma_pts = MatrixXd(3, sigma_pts.cols());
+        meas_space_sigma_pts = MatrixXd(3, n_sigma_points);
 
-        for (int i = 0; i < 2 * n_aug_states_ + 1; i++) {  //2n+1 simga points
-
-            // extract values for better readibility
-            double p_x = sigma_pts(0, i);
-            double p_y = sigma_pts(1, i);
+        for (int i = 0; i < n_sigma_points; ++i)
+        {
+            // extract values for better readability
+            double px = sigma_pts(0, i);
+            double py = sigma_pts(1, i);
             double v = sigma_pts(2, i);
             double yaw = sigma_pts(3, i);
 
-            double v1 = v * cos(yaw);
-            double v2 = v * sin(yaw);
+            double vx = v * cos(yaw);
+            double vy = v * sin(yaw);
 
             // measurement model
-            meas_space_sigma_pts(0, i) = sqrt(p_x * p_x + p_y * p_y);                        //r
-            meas_space_sigma_pts(1, i) = atan2(p_y, p_x);                                    //phi
-            meas_space_sigma_pts(2, i) = (p_x * v1 + p_y * v2) / meas_space_sigma_pts(0, i); //r_dot
+            meas_space_sigma_pts(0, i) = sqrt(px*px + py*py);                              //r
+            meas_space_sigma_pts(1, i) = atan2(py, px);                                    //phi
+            meas_space_sigma_pts(2, i) = (px * vx + py * vy) / meas_space_sigma_pts(0, i); //r_dot
         }
 
-        //mean predicted measurement
-        VectorXd z_pred = VectorXd(3);
-        z_pred.fill(0.0);
-        for (int i = 0; i < sigma_pts.cols(); i++)
-            z_pred += weights(i) * meas_space_sigma_pts.col(i);
-
-        //measurement covariance matrix S
-        MatrixXd S = MatrixXd(3, 3);
-        S.fill(0.0);
-        for (int i = 0; i < sigma_pts.cols(); i++) {
-            //residual
-            VectorXd z_diff = meas_space_sigma_pts.col(i) - z_pred;
-
-            //angle normalization
-            while (z_diff(1) > M_PI) z_diff(1) -= 2. * M_PI;
-            while (z_diff(1) < -M_PI) z_diff(1) += 2. * M_PI;
-
-            S += weights(i) * z_diff * z_diff.transpose();
-        }
-
-        //add measurement noise covariance matrix
-        S = S + R_radar_;
-
-        x_ = z_pred;
-        P_ = S;
+        return meas_space_sigma_pts;
     }  // end radar
     else if (sensor_type == SensorDataPacket::LIDAR)
     {
-
-    }
+        meas_space_sigma_pts = sigma_pts.block(0, 0, 2, n_sigma_points);
+        return meas_space_sigma_pts;
+    }  // end lidar
 }

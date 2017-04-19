@@ -14,12 +14,17 @@ public:
     RadarLidarEKF(double std_rho, double std_phi, double std_drho);
 
 private:
-    void PredictSigmaPoints(Eigen::MatrixXd &sigma_pts, const double delta_t);
-    void SigmaPointsToMeasurementSpace(Eigen::MatrixXd &sigma_pts,
-                                       const Eigen::VectorXd &weights,
-                                       const SensorDataPacket::SensorType sensor_type);
+    Eigen::MatrixXd PredictSigmaPoints(
+            const Eigen::MatrixXd &sigma_pts,
+            const double delta_t);
+
+    Eigen::MatrixXd SigmaPointsToMeasurementSpace(
+            const Eigen::MatrixXd &sigma_pts,
+            const Eigen::VectorXd &weights,
+            const SensorDataPacket::SensorType sensor_type);
 
     Eigen::MatrixXd R_radar_;
+    Eigen::MatrixXd R_lidar_;
 };
 
 
