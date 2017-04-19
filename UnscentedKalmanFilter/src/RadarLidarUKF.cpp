@@ -2,16 +2,16 @@
 // Created by jacob on 4/18/2017.
 //
 
-#include "RadarLidarEKF.h"
+#include "RadarLidarUKF.h"
 
 using namespace Eigen;
 
-RadarLidarEKF::RadarLidarEKF(
+RadarLidarUKF::RadarLidarUKF(
             std::vector<float> radar_noise,
             std::vector<float> lidar_noise,
             std::vector<float> process_noise,
             double lambda) :
-        BaseEKF(5, process_noise, lambda),
+        BaseUKF(5, process_noise, lambda),
         R_radar_(MatrixXd(3, 3)),
         R_lidar_(MatrixXd(2, 2))
 {
@@ -26,7 +26,7 @@ RadarLidarEKF::RadarLidarEKF(
 }
 
 
-Eigen::MatrixXd RadarLidarEKF::PredictSigmaPoints(const Eigen::MatrixXd &sigma_pts, const double delta_t)
+Eigen::MatrixXd RadarLidarUKF::PredictSigmaPoints(const Eigen::MatrixXd &sigma_pts, const double delta_t)
 {
     int n_sigma_points = 2 * n_aug_states_ + 1;
     MatrixXd sig_pred = MatrixXd(n_states_, n_sigma_points);
@@ -68,7 +68,7 @@ Eigen::MatrixXd RadarLidarEKF::PredictSigmaPoints(const Eigen::MatrixXd &sigma_p
     return sig_pred;
 }
 
-Eigen::MatrixXd RadarLidarEKF::SigmaPointsToMeasurementSpace(
+Eigen::MatrixXd RadarLidarUKF::SigmaPointsToMeasurementSpace(
         const Eigen::MatrixXd &sigma_pts,
         const Eigen::VectorXd &weights,
         const SensorDataPacket::SensorType sensor_type)
@@ -105,7 +105,7 @@ Eigen::MatrixXd RadarLidarEKF::SigmaPointsToMeasurementSpace(
     return meas_space_sigma_pts;
 }
 
-void RadarLidarEKF::ProcessSpaceMeanAndCovariance(
+void RadarLidarUKF::ProcessSpaceMeanAndCovariance(
         const Eigen::MatrixXd &sigma_pts,
         Eigen::VectorXd &mean,
         Eigen::MatrixXd &cov)
@@ -126,7 +126,7 @@ void RadarLidarEKF::ProcessSpaceMeanAndCovariance(
     }
 }
 
-void RadarLidarEKF::MeasurementSpaceMeanAndCovariance(
+void RadarLidarUKF::MeasurementSpaceMeanAndCovariance(
         const Eigen::MatrixXd &sigma_pts,
         const SensorDataPacket::SensorType &sensor_type,
         Eigen::VectorXd &mean,

@@ -2,20 +2,24 @@
 // Created by jacob on 4/18/2017.
 //
 
-#ifndef UNSCENTEDKALMANFILTER_RADARLIDAREKF_H
-#define UNSCENTEDKALMANFILTER_RADARLIDAREKF_H
+#ifndef UNSCENTEDKALMANFILTER_RADARLIDARUKF_H
+#define UNSCENTEDKALMANFILTER_RADARLIDARUKF_H
 
 
-#include "BaseEKF.h"
+#include "BaseUKF.h"
 
-class RadarLidarEKF : BaseEKF
+class RadarLidarUKF : BaseUKF
 {
 public:
-    RadarLidarEKF::RadarLidarEKF(
+    RadarLidarUKF(
             std::vector<float> radar_noise,
             std::vector<float> lidar_noise,
             std::vector<float> process_noise,
             double lambda);
+
+    using BaseUKF::GetCurrentState;
+    using BaseUKF::GetCurrentCovariance;
+    using BaseUKF::ProcessMeasurement;
 
 private:
     Eigen::MatrixXd PredictSigmaPoints(
@@ -43,4 +47,4 @@ private:
 };
 
 
-#endif //UNSCENTEDKALMANFILTER_RADARLIDAREKF_H
+#endif //UNSCENTEDKALMANFILTER_RADARLIDARUKF_H
