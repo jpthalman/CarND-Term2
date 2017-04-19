@@ -12,7 +12,7 @@
 
 class BaseEKF {
 public:
-    BaseEKF(int n_states, std::vector<double> noise_stdevs, double lambda);
+    BaseEKF(int n_states, std::vector<float> noise_stdevs, double lambda);
 
     Eigen::VectorXd GetCurrentState() const { return x_; }
     Eigen::MatrixXd GetCurrentCovariance() const { return P_; }
@@ -47,6 +47,7 @@ protected:
 
 private:
     void GenerateSigmaPoints(const Eigen::VectorXd &x, const Eigen::MatrixXd &P);
+    void CalculateKalmanGain();
 
     int lambda_;
     bool is_initialized_;
@@ -72,6 +73,9 @@ private:
 
     // measurement space covariance
     Eigen::MatrixXd S_;
+
+    // kalman gain
+    Eigen::MatrixXd K_;
 };
 
 

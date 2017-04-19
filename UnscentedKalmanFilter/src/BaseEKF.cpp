@@ -9,7 +9,7 @@
 using namespace Eigen;
 
 BaseEKF::BaseEKF(int n_states,
-                 std::vector<double> noise_stdevs,
+                 std::vector<float> noise_stdevs,
                  double lambda) :
         n_states_(n_states),
         n_aug_states_(n_states + noise_stdevs.size()),
@@ -106,14 +106,19 @@ void BaseEKF::ProcessMeasurement(
         Z_sigma_points_ = SigmaPointsToMeasurementSpace(X_sigma_points_, weights_, data.sensor_type);
 
         // get the mean and covariance of the new sigma points
-        MeasurementSpaceMeanAndCovariance(X_sigma_points_, data.sensor_type, x_, P_);
+        MeasurementSpaceMeanAndCovariance(Z_sigma_points_, data.sensor_type, z_, S_);
     }
     catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         exit(EXIT_FAILURE);
     }
 
+    // calculate the kalman gain
+    CalculateKalmanGain();
 
+    // update the state and covariance
+    x_ += K_ * (data.observations - z_);
+    P_ += K_ * S_ * K_.transpose();
 
     // store the UKF prediction in the referenced data packet
     data.predictions = x_;
@@ -129,6 +134,21 @@ void BaseEKF::GenerateSigmaPoints(
 
     X_sigma_points_ = MatrixXd(n_aug_states_, 2 * n_aug_states_ + 1);
     X_sigma_points_ << x, (scaling_factor * P_sqrt).colwise() + x, (-scaling_factor * P_sqrt).colwise() + x;
+}
+
+void BaseEKF::CalculateKalmanGain()
+{
+    MatrixXd cross_correlation = MatrixXd(x_.size(), z_.size());
+    cross_correlation.fill(0.0);
+
+    for (int i = 0; i < weights_.size(); ++i) {
+        VectorXd x_diff = X_sigma_points_.col(i) - x_;
+        VectorXd z_diff = Z_sigma_points_.col(i) - z_;
+
+        cross_correlation += weights_(i) * x_diff * z_diff.transpose();
+    }
+
+    K_ = cross_correlation * S_.inverse();
 }
 
 MatrixXd BaseEKF::PredictSigmaPoints(
