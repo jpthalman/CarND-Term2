@@ -31,7 +31,8 @@ Eigen::MatrixXd RadarLidarUKF::PredictSigmaPoints(const Eigen::MatrixXd &sigma_p
     int n_sigma_points = 2 * n_aug_states_ + 1;
     MatrixXd sig_pred = MatrixXd(n_states_, n_sigma_points);
 
-    for (int i = 0; i < n_sigma_points; ++i) {
+    for (int i = 0; i < n_sigma_points; ++i)
+    {
         double px = sigma_pts(0, i);
         double py = sigma_pts(1, i);
         double v  = sigma_pts(2, i);
@@ -40,29 +41,33 @@ Eigen::MatrixXd RadarLidarUKF::PredictSigmaPoints(const Eigen::MatrixXd &sigma_p
         double nu_acc = sigma_pts(5, i);
         double nu_yawdd = sigma_pts(6, i);
 
+        double delta_t2 = pow(delta_t, 2);
+
         // predicted state values
         double p_px, p_py;
 
         // don't divide by zero
         if (fabs(yawd) > 1e-3) {
             p_px = px + v/yawd * (sin(yaw + yawd*delta_t) - sin(yaw));
-            p_py = py + v/yawd * (cos(yaw + yawd*delta_t) - cos(yaw));
+            p_py = py + v/yawd * (cos(yaw) - cos(yaw + yawd*delta_t));
         } else {
             p_px = px + v * delta_t * cos(yaw);
             p_py = py + v * delta_t * sin(yaw);
         }
 
-        double p_yaw = yaw + delta_t * yawd;
-
         // add noise
-        p_px += 0.5 * nu_acc * pow(delta_t, 2) * cos(yaw);
-        p_py += 0.5 * nu_acc * pow(delta_t, 2) * sin(yaw);
+        p_px += 0.5 * nu_acc * delta_t2 * cos(yaw);
+        p_py += 0.5 * nu_acc * delta_t2 * sin(yaw);
+
+        double p_v = v + nu_acc*delta_t;
+        double p_yaw = yaw + delta_t*yawd + 0.5*nu_yawdd*delta_t2;
+        double p_yawd = yawd + nu_yawdd*delta_t;
 
         sig_pred(0, i) = p_px;
         sig_pred(1, i) = p_py;
-        sig_pred(2, i) = v;
+        sig_pred(2, i) = p_v;
         sig_pred(3, i) = p_yaw;
-        sig_pred(4, i) = yawd;
+        sig_pred(4, i) = p_yawd;
     }
 
     return sig_pred;
@@ -91,10 +96,16 @@ Eigen::MatrixXd RadarLidarUKF::SigmaPointsToMeasurementSpace(
             double vx = v * cos(yaw);
             double vy = v * sin(yaw);
 
+            double d = sqrt(px*px + py*py);
+
+            // don't divide be too small of a value
+            if (d < 1e-3)
+                d = 1e-3;
+
             // measurement model
-            meas_space_sigma_pts(0, i) = sqrt(px*px + py*py);                              // rho
-            meas_space_sigma_pts(1, i) = atan2(py, px);                                    // phi
-            meas_space_sigma_pts(2, i) = (px * vx + py * vy) / meas_space_sigma_pts(0, i); // rho_dot
+            meas_space_sigma_pts(0, i) = d;                       // rho
+            meas_space_sigma_pts(1, i) = atan2(py, px);           // phi
+            meas_space_sigma_pts(2, i) = (px * vx + py * vy) / d; // rho_dot
         }
     }  // end radar
     else if (sensor_type == SensorDataPacket::LIDAR)
@@ -119,8 +130,10 @@ void RadarLidarUKF::ProcessSpaceMeanAndCovariance(
         VectorXd diff = sigma_pts.col(i) - mean;
 
         //angle normalization
-        while (diff(3)> M_PI) diff(3)-=2.*M_PI;
-        while (diff(3)<-M_PI) diff(3)+=2.*M_PI;
+        while (diff(3) >  M_PI)
+            diff(3) -= 2.0*M_PI;
+        while (diff(3) < -M_PI)
+            diff(3) += 2.0 * M_PI;
 
         cov += weights_(i) * diff * diff.transpose();
     }
