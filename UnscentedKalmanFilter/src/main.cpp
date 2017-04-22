@@ -45,27 +45,34 @@ int main(int argc, char* argv[])
 
     for (auto &data_packet : data_packets)
     {
+        ostringstream line_out;
+
         ukf.ProcessMeasurement(data_packet);
 
+        line_out << (data_packet.sensor_type == SensorDataPacket::RADAR ? "R" : "L") << "\t";
+        line_out << "--\t";
+
         for (size_t i = 0; i < data_packet.predictions.size(); ++i)
-            outfile << data_packet.predictions(i) << "\t";
+            line_out << data_packet.predictions(i) << "\t";
+        line_out << "--\t";
 
         if (data_packet.sensor_type == SensorDataPacket::LIDAR)
         {
-            outfile << data_packet.observations(0) << "\t"  // px
-                    << data_packet.observations(1) << "\t"; // py
+            line_out << data_packet.observations(0) << "\t"  // px
+                     << data_packet.observations(1) << "\t"; // py
         }
         else if (data_packet.sensor_type == SensorDataPacket::RADAR)
         {
             Eigen::VectorXd cartesian = polar_to_cartesian(data_packet.observations);
 
-            outfile << cartesian(0) << "\t"  // px
-                    << cartesian(1) << "\t"; // py
+            line_out << cartesian(0) << "\t"  // px
+                     << cartesian(1) << "\t"; // py
         }
+        line_out << "--\t";
 
         for (size_t i = 0; i < data_packet.ground_truths.size(); ++i)
-            outfile << data_packet.ground_truths(i) << "\t";
-        outfile << endl;
+            line_out << data_packet.ground_truths(i) << "\t";
+        outfile << line_out.str() << endl;
     }
 
     cout << "Acuracy - RMSE:" << endl
