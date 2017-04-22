@@ -45,6 +45,9 @@ void BaseUKF::ProcessMeasurement(
             x_(0) = data.observations(0);  // px
             x_(1) = data.observations(1);  // py
             x_(3) = atan2(x_(1), x_(0));   // yaw
+
+            P_(3, 3) = 10.0;
+            P_(2, 2) = P_(4, 4) = 1000.0;
         }
         else if (data.sensor_type == SensorDataPacket::RADAR)
         {
@@ -56,6 +59,8 @@ void BaseUKF::ProcessMeasurement(
             x_(2) = sqrt(pow(x_(0), 2) + pow(x_(1), 2));  // v
             x_(3) = atan2(x_(1), x_(0));  // yaw
             // TODO: estimate yaw rate with velocities
+
+            P_(2, 2) = P_(3, 3) = P_(4, 4) = 10.0;
         }
 
         prev_timestamp_ = data.timestamp;
@@ -77,6 +82,7 @@ void BaseUKF::ProcessMeasurement(
 
     int n_noise_coeff = n_aug_states_ - n_states_;
     MatrixXd P_aug = MatrixXd(n_aug_states_, n_aug_states_);
+    P_aug.fill(0.0);
 
     P_aug.topLeftCorner(n_states_, n_states_) = P_;
     P_aug.bottomRightCorner(n_noise_coeff, n_noise_coeff) = Q_;
@@ -86,10 +92,17 @@ void BaseUKF::ProcessMeasurement(
 
     try {
         // predict the sigma points to t+1
+        std::cout << "---------------------------------------------" << std::endl << std::endl
+                  << (data.sensor_type == SensorDataPacket::RADAR ? "R" : "L") << std::endl
+                  << "Predict " << dt << std::endl
+                  << x_ << std::endl << std::endl
+                  << P_ << std::endl << std::endl
+                  << X_sigma_points_ << std::endl << std::endl;
         X_sigma_points_ = PredictSigmaPoints(X_sigma_points_, dt);
+        std::cout << X_sigma_points_ << std::endl << std::endl;
 
         // predict the new mean and covariance with the new sigma points
-        ProcessSpaceMeanAndCovariance(X_sigma_points_, x_, P_);
+        ProcessSpaceMeanAndCovariance(X_sigma_points_, x_, P_);  // TODO: problem w/ sigpts passed into here
     }
     catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -100,7 +113,6 @@ void BaseUKF::ProcessMeasurement(
     /**********************************************************************************
      *                                      Update
      **********************************************************************************/
-
 
     try {
         // transform sigma points into the measurement space
@@ -118,14 +130,13 @@ void BaseUKF::ProcessMeasurement(
     CalculateKalmanGain();
 
     // update the state and covariance
-//    std::cout << K_.rows() << ' ' << K_.cols() << std::endl
-//              << data.observations.size() << std::endl << z_.size() << std::endl;
-//    std::cout << data.observations << std::endl << data.timestamp << std::endl << data.ground_truths << std::endl;
-//
-//    std::cout << (data.sensor_type == SensorDataPacket::RADAR ? "RADAR" : "LIDAR") << std::endl;
-
+    std::cout << "Update" << std::endl
+              << P_ << std::endl << std::endl
+              << S_ << std::endl << std::endl
+              << K_ << std::endl << std::endl;
     x_ += K_ * (data.observations - z_);
-    P_ += K_ * S_ * K_.transpose();
+    P_ -= K_ * S_ * K_.transpose();
+    std::cout << P_ << std::endl << std::endl;
 
     // store the UKF prediction in the referenced data packet
     data.predictions = x_;
