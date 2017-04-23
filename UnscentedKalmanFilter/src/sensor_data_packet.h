@@ -10,6 +10,7 @@
 
 struct SensorDataPacket {
     long long timestamp;
+    double net_innovation_score;
 
     enum SensorType {
         RADAR,
