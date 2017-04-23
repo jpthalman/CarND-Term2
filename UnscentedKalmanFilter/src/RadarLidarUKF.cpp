@@ -3,6 +3,7 @@
 //
 
 #include "RadarLidarUKF.h"
+#include "tools.h"
 
 using namespace Eigen;
 
@@ -25,8 +26,39 @@ RadarLidarUKF::RadarLidarUKF(
                 0, pow(lidar_noise[1], 2);
 }
 
+VectorXd RadarLidarUKF::InitializeState(
+        const SensorDataPacket &data)
+{
+    VectorXd x = VectorXd(5);
 
-Eigen::MatrixXd RadarLidarUKF::PredictSigmaPoints(const Eigen::MatrixXd &sigma_pts, const double delta_t)
+    if (data.sensor_type == SensorDataPacket::LIDAR)
+    {
+        x.fill(0.0);
+        x(0) = data.observations(0);  // px
+        x(1) = data.observations(1);  // py
+        x(3) = atan2(x(1), x(0));     // yaw
+    }
+    else if (data.sensor_type == SensorDataPacket::RADAR)
+    {
+        double rho = data.observations(0);
+        double phi = data.observations(1);
+        double drho = data.observations(2);
+
+        x.fill(0.0);
+        x(0) = rho * cos(phi);  // px
+        x(1) = rho * sin(phi);  // py
+        x(2) = drho;            // v
+        x(3) = phi;             // yaw
+    }
+
+    prev_timestamp_ = data.timestamp;
+    is_initialized_ = true;
+    return x;
+}
+
+Eigen::MatrixXd RadarLidarUKF::PredictSigmaPoints(
+        const Eigen::MatrixXd &sigma_pts,
+        const double delta_t)
 {
     int n_sigma_points = 2 * n_aug_states_ + 1;
     MatrixXd sig_pred = MatrixXd(n_states_, n_sigma_points);
@@ -51,16 +83,16 @@ Eigen::MatrixXd RadarLidarUKF::PredictSigmaPoints(const Eigen::MatrixXd &sigma_p
             p_px = px + v/yawd * (sin(yaw + yawd*delta_t) - sin(yaw));
             p_py = py + v/yawd * (cos(yaw) - cos(yaw + yawd*delta_t));
         } else {
-            p_px = px + v * delta_t * cos(yaw);
-            p_py = py + v * delta_t * sin(yaw);
+            p_px = px + v*cos(yaw)*delta_t;
+            p_py = py + v*sin(yaw)*delta_t;
         }
 
         // add noise
-        p_px += 0.5 * nu_acc * delta_t2 * cos(yaw);
-        p_py += 0.5 * nu_acc * delta_t2 * sin(yaw);
+        p_px += 0.5*delta_t2*cos(yaw)*nu_acc;
+        p_py += 0.5*delta_t2*sin(yaw)*nu_acc;
 
         double p_v = v + nu_acc*delta_t;
-        double p_yaw = yaw + delta_t*yawd + 0.5*nu_yawdd*delta_t2;
+        double p_yaw = yaw + delta_t*yawd + 0.5*delta_t2*nu_yawdd;
         double p_yawd = yawd + nu_yawdd*delta_t;
 
         sig_pred(0, i) = p_px;
@@ -96,16 +128,16 @@ Eigen::MatrixXd RadarLidarUKF::SigmaPointsToMeasurementSpace(
             double vx = v * cos(yaw);
             double vy = v * sin(yaw);
 
+            // don't divide by too small of a value
+            if (px*px + py*py < 1e-3)
+                px = py = 1e-3;
+
             double d = sqrt(px*px + py*py);
 
-            // don't divide be too small of a value
-            if (d < 1e-3)
-                d = 1e-3;
-
             // measurement model
-            meas_space_sigma_pts(0, i) = d;                       // rho
-            meas_space_sigma_pts(1, i) = atan2(py, px);           // phi
-            meas_space_sigma_pts(2, i) = (px * vx + py * vy) / d; // rho_dot
+            meas_space_sigma_pts(0, i) = d;                     // rho
+            meas_space_sigma_pts(1, i) = atan2(py, px);         // phi
+            meas_space_sigma_pts(2, i) = (px*vx + py*vy) / d;   // rho_dot
         }
     }  // end radar
     else if (sensor_type == SensorDataPacket::LIDAR)
@@ -156,4 +188,11 @@ void RadarLidarUKF::MeasurementSpaceMeanAndCovariance(
     }
 
     cov += (sensor_type == SensorDataPacket::RADAR ? R_radar_ : R_lidar_);
+}
+
+Eigen::VectorXd RadarLidarUKF::StateSpaceToCartesian(const Eigen::VectorXd &x)
+{
+    Vector4d cartesian;
+    cartesian << x(0), x(1), x(2)*cos(x(3)), x(2)*sin(x(3));
+    return cartesian;
 }

@@ -17,11 +17,16 @@ public:
             std::vector<float> process_noise,
             double lambda);
 
+    ~RadarLidarUKF() {};
+
     using BaseUKF::GetCurrentState;
     using BaseUKF::GetCurrentCovariance;
     using BaseUKF::ProcessMeasurement;
 
 private:
+    Eigen::VectorXd InitializeState(
+            const SensorDataPacket &data);
+
     Eigen::MatrixXd PredictSigmaPoints(
             const Eigen::MatrixXd &sigma_pts,
             const double delta_t);
@@ -41,6 +46,8 @@ private:
             const SensorDataPacket::SensorType &sensor_type,
             Eigen::VectorXd &mean,
             Eigen::MatrixXd &cov);
+
+    Eigen::VectorXd StateSpaceToCartesian(const Eigen::VectorXd &x);
 
     Eigen::MatrixXd R_radar_;
     Eigen::MatrixXd R_lidar_;
