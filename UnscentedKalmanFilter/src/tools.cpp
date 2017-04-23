@@ -14,10 +14,10 @@ Eigen::VectorXd polar_to_cartesian(const Eigen::VectorXd &polar) {
     double rho_dot = polar(2);
 
     Eigen::VectorXd cartesian = Eigen::Vector4d::Zero();
-    cartesian <<    rho * cos(phi), // px
-            rho * sin(phi),         // py
-            rho_dot * cos(phi),     // vx
-            rho_dot * sin(phi);     // vy
+    cartesian <<    rho * cos(phi),     // px
+                    rho * sin(phi),     // py
+                    rho_dot * cos(phi), // vx
+                    rho_dot * sin(phi); // vy
     return cartesian;
 }
 
