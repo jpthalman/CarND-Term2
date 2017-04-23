@@ -3,3 +3,4 @@ ExtendedKalmanFilter/.idea
 
 UnscentedKalmanFilter/cmake-build-debug
 UnscentedKalmanFilter/.idea
+UnscentedKalmanFilter/kalman_tracker_linux
