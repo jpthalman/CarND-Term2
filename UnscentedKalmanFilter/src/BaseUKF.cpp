@@ -39,32 +39,14 @@ void BaseUKF::ProcessMeasurement(
      **********************************************************************************/
 
     if (!is_initialized_) {
-        if (data.sensor_type == SensorDataPacket::LIDAR)
-        {
-            x_.fill(0.0);
-            x_(0) = data.observations(0);  // px
-            x_(1) = data.observations(1);  // py
-            x_(3) = atan2(x_(1), x_(0));   // yaw
-
-            P_(3, 3) = 10.0;
-            P_(2, 2) = P_(4, 4) = 1000.0;
+        try {
+            x_ = InitializeState(data);
         }
-        else if (data.sensor_type == SensorDataPacket::RADAR)
-        {
-            VectorXd cartesian = polar_to_cartesian(data.observations);
-
-            x_.fill(0.0);
-            x_(0) = cartesian(0);  // px
-            x_(1) = cartesian(1);  // py
-            x_(2) = sqrt(pow(x_(0), 2) + pow(x_(1), 2));  // v
-            x_(3) = atan2(x_(1), x_(0));  // yaw
-            // TODO: estimate yaw rate with velocities
-
-            P_(2, 2) = P_(3, 3) = P_(4, 4) = 10.0;
+        catch (const std::exception &e) {
+            std::cerr << e.what() << std::endl;
+            exit(EXIT_FAILURE);
         }
 
-        prev_timestamp_ = data.timestamp;
-        is_initialized_ = true;
         return;
     }
 
@@ -92,17 +74,10 @@ void BaseUKF::ProcessMeasurement(
 
     try {
         // predict the sigma points to t+1
-        std::cout << "---------------------------------------------" << std::endl << std::endl
-                  << (data.sensor_type == SensorDataPacket::RADAR ? "R" : "L") << std::endl
-                  << "Predict " << dt << std::endl
-                  << x_ << std::endl << std::endl
-                  << P_ << std::endl << std::endl
-                  << X_sigma_points_ << std::endl << std::endl;
         X_sigma_points_ = PredictSigmaPoints(X_sigma_points_, dt);
-        std::cout << X_sigma_points_ << std::endl << std::endl;
 
         // predict the new mean and covariance with the new sigma points
-        ProcessSpaceMeanAndCovariance(X_sigma_points_, x_, P_);  // TODO: problem w/ sigpts passed into here
+        ProcessSpaceMeanAndCovariance(X_sigma_points_, x_, P_);
     }
     catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
@@ -130,16 +105,12 @@ void BaseUKF::ProcessMeasurement(
     CalculateKalmanGain();
 
     // update the state and covariance
-    std::cout << "Update" << std::endl
-              << P_ << std::endl << std::endl
-              << S_ << std::endl << std::endl
-              << K_ << std::endl << std::endl;
-    x_ += K_ * (data.observations - z_);
+    VectorXd diff = data.observations - z_;
+    x_ += K_ * diff;
     P_ -= K_ * S_ * K_.transpose();
-    std::cout << P_ << std::endl << std::endl;
 
-    // store the UKF prediction in the referenced data packet
-    data.predictions = x_;
+    data.net_innovation_score = diff.transpose() * S_ * diff;
+    data.predictions = StateSpaceToCartesian(x_);
     return;
 }
 
@@ -199,4 +170,16 @@ void BaseUKF::MeasurementSpaceMeanAndCovariance(
         Eigen::MatrixXd &cov)
 {
     throw NotImplementedException("`MeasurementSpaceMeanAndCovariance` needs to be implemented.");
+}
+
+VectorXd BaseUKF::StateSpaceToCartesian(
+        const VectorXd &x)
+{
+    throw NotImplementedException("`StateSpaceToCartesian` needs to be implemented.");
+}
+
+Eigen::VectorXd BaseUKF::InitializeState(
+        const SensorDataPacket &data)
+{
+    throw NotImplementedException("`InitializeState` needs to be implemented.");
 }

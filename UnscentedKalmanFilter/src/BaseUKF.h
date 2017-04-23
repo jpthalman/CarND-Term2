@@ -13,12 +13,16 @@
 class BaseUKF {
 public:
     BaseUKF(int n_states, std::vector<float> noise_stdevs, double lambda);
+    virtual ~BaseUKF() {}
 
-    Eigen::VectorXd GetCurrentState() const { return x_; }
-    Eigen::MatrixXd GetCurrentCovariance() const { return P_; }
+    const Eigen::VectorXd &GetCurrentState() const { return x_; }
+    const Eigen::MatrixXd &GetCurrentCovariance() const { return P_; }
     void ProcessMeasurement(SensorDataPacket &data);
 
 protected:
+    virtual Eigen::VectorXd InitializeState(
+            const SensorDataPacket &data);
+
     virtual Eigen::MatrixXd PredictSigmaPoints(
             const Eigen::MatrixXd &sigma_pts,
             const double delta_t);
@@ -39,8 +43,13 @@ protected:
             Eigen::VectorXd &mean,
             Eigen::MatrixXd &cov);
 
+    virtual Eigen::VectorXd StateSpaceToCartesian(
+            const Eigen::VectorXd &x);
+
     const int n_states_;
     const int n_aug_states_;
+    bool is_initialized_;
+    long long prev_timestamp_;
 
     // weights for prediction step
     Eigen::VectorXd weights_;
@@ -50,8 +59,6 @@ private:
     void CalculateKalmanGain();
 
     int lambda_;
-    bool is_initialized_;
-    long long prev_timestamp_;
 
     // state vector
     Eigen::VectorXd x_;
