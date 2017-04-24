@@ -43,7 +43,21 @@ int main(int argc, char* argv[])
 
     RadarLidarUKF ukf(radar_noise, lidar_noise, process_noise, lambda);
 
-    outfile << "SensorType,Px_pred,Py_pred,Vx_pred,Vy_pred,Px_meas,Py_meas,Px_gt,Py_gt,Vx_gt,Vy_gt,NIS" << endl;
+    string delimiter = ",";
+
+    // header for the output file
+    outfile << "SensorType" << delimiter
+            << "Px_pred" << delimiter
+            << "Py_pred" << delimiter
+            << "Vx_pred" << delimiter
+            << "Vy_pred" << delimiter
+            << "Px_meas" << delimiter
+            << "Py_meas" << delimiter
+            << "Px_gt" << delimiter
+            << "Py_gt" << delimiter
+            << "Vx_gt" << delimiter
+            << "Vy_gt" << delimiter
+            << "NIS" << delimiter << endl;
 
     for (auto &data_packet : data_packets)
     {
@@ -51,28 +65,28 @@ int main(int argc, char* argv[])
 
         ukf.ProcessMeasurement(data_packet);
 
-        line_out << (data_packet.sensor_type == SensorDataPacket::RADAR ? "R" : "L") << ",";
+        line_out << (data_packet.sensor_type == SensorDataPacket::RADAR ? "R" : "L") << delimiter;
 
         for (size_t i = 0; i < data_packet.predictions.size(); ++i)
-            line_out << data_packet.predictions(i) << ",";
+            line_out << data_packet.predictions(i) << delimiter;
 
         if (data_packet.sensor_type == SensorDataPacket::LIDAR)
         {
-            line_out << data_packet.observations(0) << ","  // px
-                     << data_packet.observations(1) << ","; // py
+            line_out << data_packet.observations(0) << delimiter  // px
+                     << data_packet.observations(1) << delimiter; // py
         }
         else if (data_packet.sensor_type == SensorDataPacket::RADAR)
         {
             Eigen::VectorXd cartesian = polar_to_cartesian(data_packet.observations);
 
-            line_out << cartesian(0) << ","  // px
-                     << cartesian(1) << ","; // py
+            line_out << cartesian(0) << delimiter  // px
+                     << cartesian(1) << delimiter; // py
         }
 
         for (size_t i = 0; i < data_packet.ground_truths.size(); ++i)
-            line_out << data_packet.ground_truths(i) << ",";
+            line_out << data_packet.ground_truths(i) << delimiter;
 
-        line_out << data_packet.net_innovation_score;
+        line_out << data_packet.nis;
         outfile << line_out.str() << endl;
     }
 
