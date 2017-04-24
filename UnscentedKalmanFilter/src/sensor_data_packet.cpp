@@ -11,7 +11,7 @@ SensorDataPacket::SensorDataPacket(
         Eigen::VectorXd init_gt)
 {
     timestamp = init_time;
-    net_innovation_score = 0;
+    nis = 0;
 
     assert(init_sensor == 'L' || init_sensor == 'R');
     sensor_type = init_sensor == 'R' ? SensorType::RADAR : SensorType::LIDAR;
@@ -23,7 +23,7 @@ SensorDataPacket::SensorDataPacket(
 
 SensorDataPacket::SensorDataPacket(std::istringstream &iss)
 {
-    net_innovation_score = 0;
+    nis = 0;
 
     char sensor_type_char;
     iss >> sensor_type_char;
