@@ -30,6 +30,7 @@ VectorXd RadarLidarUKF::InitializeState(
         const SensorDataPacket &data)
 {
     VectorXd x = VectorXd(5);
+    x.fill(0.0);
 
     if (data.sensor_type == SensorDataPacket::LIDAR)
     {
@@ -52,7 +53,9 @@ VectorXd RadarLidarUKF::InitializeState(
     }
 
     prev_timestamp_ = data.timestamp;
-    is_initialized_ = true;
+
+    if (fabs(x(0)) + fabs(x(1)) > 1e-3)
+        is_initialized_ = true;
     return x;
 }
 
@@ -184,6 +187,16 @@ void RadarLidarUKF::MeasurementSpaceMeanAndCovariance(
     for (int i = 0; i < 2 * n_aug_states_ + 1; ++i)
     {
         VectorXd diff = sigma_pts.col(i) - mean;
+
+        //angle normalization
+        if (sensor_type == SensorDataPacket::RADAR)
+        {
+            while (diff(1) > M_PI)
+                diff(1) -= 2.0 * M_PI;
+            while (diff(1) < -M_PI)
+                diff(1) += 2.0 * M_PI;
+        }
+
         cov += weights_(i) * diff * diff.transpose();
     }
 
