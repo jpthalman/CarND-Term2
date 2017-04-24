@@ -109,8 +109,17 @@ void BaseUKF::ProcessMeasurement(
     x_ += K_ * diff;
     P_ -= K_ * S_ * K_.transpose();
 
-    data.net_innovation_score = diff.transpose() * S_ * diff;
+    data.nis = diff.transpose() * S_.inverse() * diff;
     data.predictions = StateSpaceToCartesian(x_);
+
+    std::cout << "----------- "
+              << (data.sensor_type == SensorDataPacket::RADAR ? "RADAR" : "LIDAR")
+              << " -----------" << std::endl << std::endl
+              << "State:" << std::endl
+              << x_ << std::endl << std::endl
+              << "Covariance:" << std::endl
+              << P_ << std::endl << std::endl;
+
     return;
 }
 
