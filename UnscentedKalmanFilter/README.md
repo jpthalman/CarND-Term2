@@ -24,7 +24,7 @@ In this project, I created an Unscented Kalman Filter with the purpose of locali
 
 When ran against `data/obj_pose-laser-radar-synthetic-input.txt`, the following RMSE's are obtained:
 
-- P<sub>x</sub> : 0.0698449
-- P<sub>y</sub> : 0.0861106
-- V<sub>x</sub> : 0.3442510
-- V<sub>y</sub> : 0.3255100
+- P<sub>x</sub> : 0.0735694
+- P<sub>y</sub> : 0.0882264
+- V<sub>x</sub> : 0.3842200
+- V<sub>y</sub> : 0.2965810
