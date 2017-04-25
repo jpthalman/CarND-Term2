@@ -58,32 +58,14 @@ void BaseUKF::ProcessMeasurement(
     double dt = (data.timestamp - prev_timestamp_) / 1e6;
     prev_timestamp_ = data.timestamp;
 
-    // create augmented state and covariance to include noise
-    VectorXd x_aug = VectorXd(n_aug_states_);
-    x_aug << x_, 0, 0;
-
-    int n_noise_coeff = n_aug_states_ - n_states_;
-    MatrixXd P_aug = MatrixXd(n_aug_states_, n_aug_states_);
-    P_aug.fill(0.0);
-
-    P_aug.topLeftCorner(n_states_, n_states_) = P_;
-    P_aug.bottomRightCorner(n_noise_coeff, n_noise_coeff) = Q_;
-
-    // create the initial sigma points
-    GenerateSigmaPoints(x_aug, P_aug);
-
-    try {
-        // predict the sigma points to t+1
-        X_sigma_points_ = PredictSigmaPoints(X_sigma_points_, dt);
-
-        // predict the new mean and covariance with the new sigma points
-        ProcessSpaceMeanAndCovariance(X_sigma_points_, x_, P_);
+    // if the timestep is too large, break up the prediction into multiple steps
+    const double dt_max = 0.1;
+    while (dt > dt_max)
+    {
+        Predict(data, dt_max);
+        dt -= dt_max;
     }
-    catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
+    Predict(data, dt);
 
     /**********************************************************************************
      *                                      Update
@@ -105,11 +87,22 @@ void BaseUKF::ProcessMeasurement(
     CalculateKalmanGain();
 
     // update the state and covariance
-    VectorXd diff = data.observations - z_;
-    x_ += K_ * diff;
+    VectorXd z_diff = data.observations - z_;
+
+    if (data.sensor_type == SensorDataPacket::RADAR)
+    {
+        while (z_diff(1) > M_PI)
+            z_diff(1) -= 2.0 * M_PI;
+        while (z_diff(1) < -M_PI)
+            z_diff(1) += 2.0 * M_PI;
+    }
+
+    std::cout << "Update" << std::endl << std::endl;
+
+    x_ += K_ * z_diff;
     P_ -= K_ * S_ * K_.transpose();
 
-    data.nis = diff.transpose() * S_.inverse() * diff;
+    data.nis = z_diff.transpose() * S_.inverse() * z_diff;
     data.predictions = StateSpaceToCartesian(x_);
 
     std::cout << "----------- "
@@ -141,12 +134,55 @@ void BaseUKF::CalculateKalmanGain()
 
     for (int i = 0; i < weights_.size(); ++i) {
         VectorXd x_diff = X_sigma_points_.col(i) - x_;
+
+        while (x_diff(3) > M_PI)
+            x_diff(3) -= 2.0 * M_PI;
+        while (x_diff(3) < -M_PI)
+            x_diff(3) += 2.0 * M_PI;
+
         VectorXd z_diff = Z_sigma_points_.col(i) - z_;
+
+        if (z_.size() == 3)
+        {
+            while (z_diff(1) > M_PI)
+                z_diff(1) -= 2.0 * M_PI;
+            while (z_diff(1) < -M_PI)
+                z_diff(1) += 2.0 * M_PI;
+        }
 
         cross_correlation += weights_(i) * x_diff * z_diff.transpose();
     }
 
     K_ = cross_correlation * S_.inverse();
+}
+
+void BaseUKF::Predict(const SensorDataPacket &data, const double dt)
+{
+    // create augmented state and covariance to include noise
+    VectorXd x_aug = VectorXd(n_aug_states_);
+    x_aug << x_, 0, 0;
+
+    int n_noise_coeff = n_aug_states_ - n_states_;
+    MatrixXd P_aug = MatrixXd(n_aug_states_, n_aug_states_);
+    P_aug.fill(0.0);
+
+    P_aug.topLeftCorner(n_states_, n_states_) = P_;
+    P_aug.bottomRightCorner(n_noise_coeff, n_noise_coeff) = Q_;
+
+    // create the initial sigma points
+    GenerateSigmaPoints(x_aug, P_aug);
+
+    try {
+        // predict the sigma points to t+1
+        X_sigma_points_ = PredictSigmaPoints(X_sigma_points_, dt);
+
+        // predict the new mean and covariance with the new sigma points
+        ProcessSpaceMeanAndCovariance(X_sigma_points_, x_, P_);
+    }
+    catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 MatrixXd BaseUKF::PredictSigmaPoints(

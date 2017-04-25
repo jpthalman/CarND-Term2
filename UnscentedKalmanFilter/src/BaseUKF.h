@@ -55,6 +55,7 @@ protected:
     Eigen::VectorXd weights_;
 
 private:
+    void Predict(const SensorDataPacket &data, const double dt);
     void GenerateSigmaPoints(const Eigen::VectorXd &x, const Eigen::MatrixXd &P);
     void CalculateKalmanGain();
 
