@@ -132,8 +132,10 @@ Eigen::MatrixXd RadarLidarUKF::SigmaPointsToMeasurementSpace(
             double vy = v * sin(yaw);
 
             // don't divide by too small of a value
-            if (px*px + py*py < 1e-3)
-                px = py = 1e-3;
+            if (fabs(px) < 1e-3)
+                px = 1e-3;
+            if (fabs(py) < 1e-3)
+                py = 1e-3;
 
             double d = sqrt(px*px + py*py);
 
