@@ -8,9 +8,19 @@
 
 #include "BaseUKF.h"
 
+/**
+ * Extend BaseUKF to the case of a dynamic system with Radar and Lidar measurements.
+ *
+ * @param radar_noise: A vector which stores the noise STDDEV for each radar state.
+ * @param lidar_noise: A vector which stores the noise STDDEV for each lidar state.
+ * @param process_noise: A vector which stores the STDDEV of the process noises.
+ * */
 class RadarLidarUKF : BaseUKF
 {
 public:
+    /**
+     * Constructor and destructor.
+     * */
     RadarLidarUKF(
             std::vector<float> radar_noise,
             std::vector<float> lidar_noise,
@@ -19,11 +29,17 @@ public:
 
     ~RadarLidarUKF() {};
 
+    /**
+     * Expose the base class member functions.
+     * */
     using BaseUKF::GetCurrentState;
     using BaseUKF::GetCurrentCovariance;
     using BaseUKF::ProcessMeasurement;
 
 private:
+    /**
+     * Implement BaseUKF's functions for this use case.
+     * */
     Eigen::VectorXd InitializeState(
             const SensorDataPacket &data);
 
@@ -49,6 +65,7 @@ private:
 
     Eigen::VectorXd StateSpaceToCartesian(const Eigen::VectorXd &x);
 
+    // noise covariance matrices for the radar and lidar
     Eigen::MatrixXd R_radar_;
     Eigen::MatrixXd R_lidar_;
 };

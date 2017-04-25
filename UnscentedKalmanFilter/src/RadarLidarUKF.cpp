@@ -54,6 +54,7 @@ VectorXd RadarLidarUKF::InitializeState(
 
     prev_timestamp_ = data.timestamp;
 
+    // only initialize if there is an actual measurement
     if (fabs(x(0)) + fabs(x(1)) > 1e-3)
         is_initialized_ = true;
     return x;
@@ -66,6 +67,7 @@ Eigen::MatrixXd RadarLidarUKF::PredictSigmaPoints(
     int n_sigma_points = 2 * n_aug_states_ + 1;
     MatrixXd sig_pred = MatrixXd(n_states_, n_sigma_points);
 
+    // for each sigma point
     for (int i = 0; i < n_sigma_points; ++i)
     {
         double px = sigma_pts(0, i);
@@ -94,10 +96,12 @@ Eigen::MatrixXd RadarLidarUKF::PredictSigmaPoints(
         p_px += 0.5*delta_t2*cos(yaw)*nu_acc;
         p_py += 0.5*delta_t2*sin(yaw)*nu_acc;
 
+        // predicted velocity, yaw, and yaw rate
         double p_v = v + nu_acc*delta_t;
         double p_yaw = yaw + delta_t*yawd + 0.5*delta_t2*nu_yawdd;
         double p_yawd = yawd + nu_yawdd*delta_t;
 
+        // store the predictions in their sigma point column
         sig_pred(0, i) = p_px;
         sig_pred(1, i) = p_py;
         sig_pred(2, i) = p_v;
@@ -120,6 +124,7 @@ Eigen::MatrixXd RadarLidarUKF::SigmaPointsToMeasurementSpace(
     {
         meas_space_sigma_pts = MatrixXd(3, n_sigma_points);
 
+        // for each sigma point
         for (int i = 0; i < n_sigma_points; ++i)
         {
             // extract values for better readability
@@ -128,6 +133,7 @@ Eigen::MatrixXd RadarLidarUKF::SigmaPointsToMeasurementSpace(
             double v = sigma_pts(2, i);
             double yaw = sigma_pts(3, i);
 
+            // velocities
             double vx = v * cos(yaw);
             double vy = v * sin(yaw);
 
@@ -162,6 +168,8 @@ void RadarLidarUKF::ProcessSpaceMeanAndCovariance(
 
     cov = MatrixXd(sigma_pts.rows(), sigma_pts.rows());
     cov.fill(0.0);
+
+    // for each sigma point
     for (int i = 0; i < 2 * n_aug_states_ + 1; ++i)
     {
         VectorXd diff = sigma_pts.col(i) - mean;
@@ -186,6 +194,8 @@ void RadarLidarUKF::MeasurementSpaceMeanAndCovariance(
 
     cov = MatrixXd(sigma_pts.rows(), sigma_pts.rows());
     cov.fill(0.0);
+
+    // for each sigma point
     for (int i = 0; i < 2 * n_aug_states_ + 1; ++i)
     {
         VectorXd diff = sigma_pts.col(i) - mean;
@@ -208,6 +218,9 @@ void RadarLidarUKF::MeasurementSpaceMeanAndCovariance(
 Eigen::VectorXd RadarLidarUKF::StateSpaceToCartesian(const Eigen::VectorXd &x)
 {
     Vector4d cartesian;
-    cartesian << x(0), x(1), x(2)*cos(x(3)), x(2)*sin(x(3));
+    cartesian <<    x(0), // px
+                    x(1), // py
+                    x(2)*cos(x(3)), // vx
+                    x(2)*sin(x(3)); // vy
     return cartesian;
 }
