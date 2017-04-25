@@ -37,7 +37,7 @@ def main():
     chi_95p_3df = np.full(nis_radar.shape, chi2.isf(df=3, q=0.05))
 
     nis_lidar = data.loc[data.SensorType == 'L']['NIS'].as_matrix()
-    chi_95p_2df = np.full(nis_radar.shape, chi2.isf(df=3, q=0.05))
+    chi_95p_2df = np.full(nis_radar.shape, chi2.isf(df=2, q=0.05))
 
     ax = plt.subplot(2,2,3)
     ax.set_title('Radar NIS')
