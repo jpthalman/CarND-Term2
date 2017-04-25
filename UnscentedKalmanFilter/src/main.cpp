@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     vector<float> radar_noise{
             0.3,   // rho
             0.03,  // phi
-            0.3    // rho_dot
+            0.6    // rho_dot
     };
     vector<float> lidar_noise{
             0.15,  // px
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
             1.0,  // acceleration
             0.8   // yaw rate
     };
-    double lambda = 0;
+    double lambda = 0.0;
 
     // initialize the UKF with the noise vectors and spreading parameter
     RadarLidarUKF ukf(radar_noise, lidar_noise, process_noise, lambda);
