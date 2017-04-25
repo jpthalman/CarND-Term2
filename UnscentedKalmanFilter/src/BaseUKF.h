@@ -9,14 +9,41 @@
 #include "Eigen/Dense"
 #include "sensor_data_packet.h"
 
-
+/**
+ * This class is a base class for an Unscented Kalman Filter. Meant to be inherited.
+ *
+ * Functions to implement:
+ *  - InitializeState
+ *  - PredictSigmaPoints
+ *  - SigmaPointsToMeasurementSpace
+ *  - ProcessSpaceMeanAndCovariance
+ *  - MeasurementSpaceMeanAndCovariance
+ *  - StateSpaceToCartesian
+ *
+ * @param n_states: The number of states that the UKF will track.
+ * @param noise_stdevs: Vector of the noise values that correspond to the tracked states.
+ * @param lambda: Scaling parameter for the sigma points.
+ * */
 class BaseUKF {
 public:
+    /**
+     * Constructor and Destructor
+     * */
     BaseUKF(int n_states, std::vector<float> noise_stdevs, double lambda);
     virtual ~BaseUKF() {}
 
+    /**
+     * These functions provide access to the current state and covariance from an initialized object.
+     * */
     const Eigen::VectorXd &GetCurrentState() const { return x_; }
     const Eigen::MatrixXd &GetCurrentCovariance() const { return P_; }
+
+    /**
+     * Takes in a SensorDataPacket and performs all necessary actions to predict the state and update
+     * based upon the measurement.
+     *
+     * @param data: Fully initialized SensorDataPacket.
+     * */
     void ProcessMeasurement(SensorDataPacket &data);
 
 protected:

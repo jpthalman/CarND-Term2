@@ -8,6 +8,21 @@
 
 using namespace Eigen;
 
+/**
+ * This class is a base class for an Unscented Kalman Filter. Meant to be inherited.
+ *
+ * Functions to implement:
+ *  - InitializeState
+ *  - PredictSigmaPoints
+ *  - SigmaPointsToMeasurementSpace
+ *  - ProcessSpaceMeanAndCovariance
+ *  - MeasurementSpaceMeanAndCovariance
+ *  - StateSpaceToCartesian
+ *
+ * @param n_states: The number of states that the UKF will track.
+ * @param noise_stdevs: Vector of the noise values that correspond to the tracked states.
+ * @param lambda: Scaling parameter for the sigma points.
+ * */
 BaseUKF::BaseUKF(int n_states,
                  std::vector<float> noise_stdevs,
                  double lambda) :
@@ -31,6 +46,12 @@ BaseUKF::BaseUKF(int n_states,
     weights_(0) = lambda_ / (lambda_ + n_aug_states_);
 }
 
+/**
+ * Takes in a SensorDataPacket and performs all necessary actions to predict the state and update
+ * based upon the measurement.
+ *
+ * @param data: Fully initialized SensorDataPacket.
+ * */
 void BaseUKF::ProcessMeasurement(
         SensorDataPacket &data)
 {
