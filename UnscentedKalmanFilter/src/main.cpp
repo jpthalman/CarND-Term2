@@ -36,10 +36,10 @@ int main(int argc, char* argv[])
             0.15   // py
     };
     vector<float> process_noise{
-            3.0,  // acceleration
-            2.0   // yaw rate
+            1.0,  // acceleration
+            0.8   // yaw rate
     };
-    double lambda = -4;
+    double lambda = 0;
 
     RadarLidarUKF ukf(radar_noise, lidar_noise, process_noise, lambda);
 
@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
             << "Py_gt" << delimiter
             << "Vx_gt" << delimiter
             << "Vy_gt" << delimiter
-            << "NIS" << delimiter << endl;
+            << "NIS" << endl;
 
     for (auto &data_packet : data_packets)
     {
