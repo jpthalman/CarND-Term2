@@ -54,7 +54,7 @@ protected:
      * @param data: The initial SensorDataPacket.
      * */
     virtual Eigen::VectorXd InitializeState(
-            const SensorDataPacket &data);
+            const SensorDataPacket &data) = 0;
 
     /**
      * This function needs to take the provided augmented sigma points and predict them forward dt seconds.
@@ -64,7 +64,7 @@ protected:
      * */
     virtual Eigen::MatrixXd PredictSigmaPoints(
             const Eigen::MatrixXd &sigma_pts,
-            const double delta_t);
+            const double delta_t) = 0;
 
     /**
      * This function needs to transform the provided sigma points into the space of the measurement. These
@@ -77,7 +77,7 @@ protected:
     virtual Eigen::MatrixXd SigmaPointsToMeasurementSpace(
             const Eigen::MatrixXd &sigma_pts,
             const Eigen::VectorXd &weights,
-            const SensorDataPacket::SensorType sensor_type);
+            const SensorDataPacket::SensorType sensor_type) = 0;
 
     /**
      * This needs to calculate the mean and covariance matrix from the sigma points generated
@@ -90,7 +90,7 @@ protected:
     virtual void ProcessSpaceMeanAndCovariance(
             const Eigen::MatrixXd &sigma_pts,
             Eigen::VectorXd &mean,
-            Eigen::MatrixXd &cov);
+            Eigen::MatrixXd &cov) = 0;
 
     /**
      * This needs to calculate the mean and covariance matrix from the sigma points generated
@@ -104,7 +104,7 @@ protected:
             const Eigen::MatrixXd &sigma_pts,
             const SensorDataPacket::SensorType &sensor_type,
             Eigen::VectorXd &mean,
-            Eigen::MatrixXd &cov);
+            Eigen::MatrixXd &cov) = 0;
 
     /**
      * This function takes the current state, transforms it to cartesian coordinates, and returns it.
@@ -112,7 +112,7 @@ protected:
      * @param x: The vector to transform.
      * */
     virtual Eigen::VectorXd StateSpaceToCartesian(
-            const Eigen::VectorXd &x);
+            const Eigen::VectorXd &x) = 0;
 
     const int n_states_;
     const int n_aug_states_;
