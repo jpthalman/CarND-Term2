@@ -22,7 +22,7 @@ In this project, I created an Unscented Kalman Filter with the purpose of locali
 	<img src="https://github.com/jpthalman/CarND-Term2/blob/master/UnscentedKalmanFilter/images/results_plot.png">
 </div>
 
-When ran against `data/sample-laser-radar-measurement-data-1.txt`, the following RMSE's are obtained:
+When ran against `data/obj_pose-laser-radar-synthetic-input.txt`, the following RMSE's are obtained:
 
 - P<sub>x</sub> : 0.0698449
 - P<sub>y</sub> : 0.0861106
