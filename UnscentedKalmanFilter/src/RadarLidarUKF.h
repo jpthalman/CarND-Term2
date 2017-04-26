@@ -52,16 +52,12 @@ private:
             const Eigen::VectorXd &weights,
             const SensorDataPacket::SensorType sensor_type);
 
-    void ProcessSpaceMeanAndCovariance(
-            const Eigen::MatrixXd &sigma_pts,
-            Eigen::VectorXd &mean,
-            Eigen::MatrixXd &cov);
+    std::pair<Eigen::VectorXd, Eigen::MatrixXd> ProcessSpaceMeanAndCovariance(
+            const Eigen::MatrixXd &sigma_pts);
 
-    void MeasurementSpaceMeanAndCovariance(
+    std::pair<Eigen::VectorXd, Eigen::MatrixXd> MeasurementSpaceMeanAndCovariance(
             const Eigen::MatrixXd &sigma_pts,
-            const SensorDataPacket::SensorType &sensor_type,
-            Eigen::VectorXd &mean,
-            Eigen::MatrixXd &cov);
+            const SensorDataPacket::SensorType &sensor_type);
 
     Eigen::VectorXd StateSpaceToCartesian(const Eigen::VectorXd &x);
 

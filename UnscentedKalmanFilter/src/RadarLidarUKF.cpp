@@ -159,14 +159,12 @@ Eigen::MatrixXd RadarLidarUKF::SigmaPointsToMeasurementSpace(
     return meas_space_sigma_pts;
 }
 
-void RadarLidarUKF::ProcessSpaceMeanAndCovariance(
-        const Eigen::MatrixXd &sigma_pts,
-        Eigen::VectorXd &mean,
-        Eigen::MatrixXd &cov)
+Gaussian RadarLidarUKF::ProcessSpaceMeanAndCovariance(
+        const Eigen::MatrixXd &sigma_pts)
 {
-    mean = sigma_pts * weights_;
+    VectorXd mean = sigma_pts * weights_;
 
-    cov = MatrixXd(sigma_pts.rows(), sigma_pts.rows());
+    MatrixXd cov = MatrixXd(sigma_pts.rows(), sigma_pts.rows());
     cov.fill(0.0);
 
     // for each sigma point
@@ -176,17 +174,17 @@ void RadarLidarUKF::ProcessSpaceMeanAndCovariance(
         diff = NormalizeStateVector(diff);
         cov += weights_(i) * diff * diff.transpose();
     }
+
+    return std::make_pair(mean, cov);
 }
 
-void RadarLidarUKF::MeasurementSpaceMeanAndCovariance(
+Gaussian RadarLidarUKF::MeasurementSpaceMeanAndCovariance(
         const Eigen::MatrixXd &sigma_pts,
-        const SensorDataPacket::SensorType &sensor_type,
-        Eigen::VectorXd &mean,
-        Eigen::MatrixXd &cov)
+        const SensorDataPacket::SensorType &sensor_type)
 {
-    mean = sigma_pts * weights_;
+    VectorXd mean = sigma_pts * weights_;
 
-    cov = MatrixXd(sigma_pts.rows(), sigma_pts.rows());
+    VectorXd cov = MatrixXd(sigma_pts.rows(), sigma_pts.rows());
     cov.fill(0.0);
 
     // for each sigma point
@@ -201,6 +199,7 @@ void RadarLidarUKF::MeasurementSpaceMeanAndCovariance(
     }
 
     cov += (sensor_type == SensorDataPacket::RADAR ? R_radar_ : R_lidar_);
+    return std::make_pair(mean, cov);
 }
 
 Eigen::VectorXd RadarLidarUKF::StateSpaceToCartesian(const Eigen::VectorXd &x)
