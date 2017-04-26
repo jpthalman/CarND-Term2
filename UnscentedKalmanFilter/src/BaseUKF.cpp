@@ -28,19 +28,20 @@ BaseUKF::BaseUKF(int n_states,
                  std::vector<float> noise_stdevs,
                  double lambda) :
         n_states_(n_states),
-        n_aug_states_(n_states + noise_stdevs.size()),
+        n_noise_coeffs_(noise_stdevs.size()),
+        n_aug_states_(n_states + n_noise_coeffs_),
         lambda_(lambda),
         x_(VectorXd(n_states)),
         P_(MatrixXd::Identity(n_states, n_states)),
-        Q_(MatrixXd(noise_stdevs.size(), noise_stdevs.size())),
+        P_aug_(MatrixXd(n_aug_states_, n_aug_states_)),
         X_sigma_points_(MatrixXd(n_aug_states_, 2 * n_aug_states_ + 1)),
         weights_(VectorXd(2 * n_aug_states_ + 1)),
         is_initialized_(false)
 {
-    // instantiate the process noise matrix
-    Q_.fill(0.0);
-    for (int i = 0; i < noise_stdevs.size(); ++i)
-        Q_(i, i) = pow(noise_stdevs[i], 2);
+    // instantiate the augmented covariance matrix with the process noise
+    P_aug_.fill(0.0);
+    for (int i = n_states_; i < n_aug_states_; ++i)
+        P_aug_(i, i) = pow(noise_stdevs[i - n_states_], 2);
 
     // instantiate the weights for the prediction step
     weights_.fill(0.5 / (lambda_ + n_aug_states_));
@@ -73,30 +74,16 @@ void BaseUKF::ProcessMeasurement(
     double dt = (data.timestamp - prev_timestamp_) / 1e6;
     prev_timestamp_ = data.timestamp;
 
-    Predict(data, dt);
+    PredictState(data, dt);
 
     /**********************************************************************************
      *                                      Update
      **********************************************************************************/
 
-    // transform sigma points into the measurement space
-    Z_sigma_points_ = SigmaPointsToMeasurementSpace(X_sigma_points_, weights_, data.sensor_type);
-
-    // get the mean and covariance of the new sigma points
-    MeasurementSpaceMeanAndCovariance(Z_sigma_points_, data.sensor_type, z_, S_);
-
-    // calculate the kalman gain
-    CalculateKalmanGain(data.sensor_type);
-
-    // calculate and normalize the residual
-    VectorXd z_diff = NormalizeMeasurementVector(data.observations - z_, data.sensor_type);
-
-    // update the state and covariance
-    x_ += K_ * z_diff;
-    P_ -= K_ * S_ * K_.transpose();
+    VectorXd resid = UpdateState(data.observations, data.sensor_type);
 
     // store the NIS and predictions in the data packet
-    data.nis = z_diff.transpose() * S_.inverse() * z_diff;
+    data.nis = resid.transpose() * S_.inverse() * resid;
     data.predictions = StateSpaceToCartesian(x_);
 
     std::cout << "----------- "
@@ -117,8 +104,8 @@ void BaseUKF::ProcessMeasurement(
  * @param P: Covariance matrix.
  * */
 void BaseUKF::GenerateSigmaPoints(
-        const Eigen::VectorXd &x,
-        const Eigen::MatrixXd &P)
+        const VectorXd &x,
+        const MatrixXd &P)
 {
     double scaling_factor = sqrt(n_aug_states_ + lambda_);
     MatrixXd P_sqrt = P.llt().matrixL();
@@ -155,25 +142,44 @@ void BaseUKF::CalculateKalmanGain(const SensorDataPacket::SensorType sensor_type
  * @param data: A fully initialized SensorDataPacket.
  * @param dt: The time in seconds to forecast the state forward.
  * */
-void BaseUKF::Predict(const SensorDataPacket &data, const double dt)
+void BaseUKF::PredictState(const SensorDataPacket &data, const double dt)
 {
     // create augmented state and covariance to include noise
     VectorXd x_aug = VectorXd(n_aug_states_);
     x_aug << x_, 0, 0;
-
-    int n_noise_coeff = n_aug_states_ - n_states_;
-    MatrixXd P_aug = MatrixXd(n_aug_states_, n_aug_states_);
-    P_aug.fill(0.0);
-
-    P_aug.topLeftCorner(n_states_, n_states_) = P_;
-    P_aug.bottomRightCorner(n_noise_coeff, n_noise_coeff) = Q_;
+    P_aug_.topLeftCorner(n_states_, n_states_) = P_;
 
     // create the initial sigma points
-    GenerateSigmaPoints(x_aug, P_aug);
+    GenerateSigmaPoints(x_aug, P_aug_);
 
     // predict the sigma points to t+1
     X_sigma_points_ = PredictSigmaPoints(X_sigma_points_, dt);
 
     // predict the new mean and covariance with the new sigma points
-    ProcessSpaceMeanAndCovariance(X_sigma_points_, x_, P_);
+    Gaussian predictions = ProcessSpaceMeanAndCovariance(X_sigma_points_);
+    x_ = predictions.first;
+    P_ = predictions.second;
+}
+
+VectorXd BaseUKF::UpdateState(const VectorXd &measurement, const SensorDataPacket::SensorType &sensor_type)
+{
+    // transform sigma points into the measurement space
+    Z_sigma_points_ = SigmaPointsToMeasurementSpace(X_sigma_points_, weights_, sensor_type);
+
+    // get the mean and covariance of the new sigma points
+    Gaussian estimates =  MeasurementSpaceMeanAndCovariance(Z_sigma_points_, sensor_type);
+    z_ = estimates.first;
+    S_ = estimates.second;
+
+    // calculate the kalman gain
+    CalculateKalmanGain(sensor_type);
+
+    // calculate and normalize the residual
+    VectorXd z_diff = NormalizeMeasurementVector(measurement - z_, sensor_type);
+
+    // update the state and covariance
+    x_ += K_ * z_diff;
+    P_ -= K_ * S_ * K_.transpose();
+
+    return z_diff;
 }
