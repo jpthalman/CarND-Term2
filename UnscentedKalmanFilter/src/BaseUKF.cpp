@@ -73,13 +73,6 @@ void BaseUKF::ProcessMeasurement(
     double dt = (data.timestamp - prev_timestamp_) / 1e6;
     prev_timestamp_ = data.timestamp;
 
-    // if the timestep is too large, break up the prediction into multiple steps
-    const double dt_max = 0.1;
-    while (dt > dt_max)
-    {
-        Predict(data, dt_max);
-        dt -= dt_max;
-    }
     Predict(data, dt);
 
     /**********************************************************************************
@@ -95,11 +88,8 @@ void BaseUKF::ProcessMeasurement(
     // calculate the kalman gain
     CalculateKalmanGain(data.sensor_type);
 
-    // update the state and covariance
-    VectorXd z_diff = data.observations - z_;
-
-    // normalize the angles
-    z_diff = NormalizeMeasurementVector(z_diff, data.sensor_type);
+    // calculate and normalize the residual
+    VectorXd z_diff = NormalizeMeasurementVector(data.observations - z_, data.sensor_type);
 
     // update the state and covariance
     x_ += K_ * z_diff;
@@ -181,15 +171,9 @@ void BaseUKF::Predict(const SensorDataPacket &data, const double dt)
     // create the initial sigma points
     GenerateSigmaPoints(x_aug, P_aug);
 
-    try {
-        // predict the sigma points to t+1
-        X_sigma_points_ = PredictSigmaPoints(X_sigma_points_, dt);
+    // predict the sigma points to t+1
+    X_sigma_points_ = PredictSigmaPoints(X_sigma_points_, dt);
 
-        // predict the new mean and covariance with the new sigma points
-        ProcessSpaceMeanAndCovariance(X_sigma_points_, x_, P_);
-    }
-    catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    // predict the new mean and covariance with the new sigma points
+    ProcessSpaceMeanAndCovariance(X_sigma_points_, x_, P_);
 }
