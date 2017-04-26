@@ -173,13 +173,7 @@ void RadarLidarUKF::ProcessSpaceMeanAndCovariance(
     for (int i = 0; i < 2 * n_aug_states_ + 1; ++i)
     {
         VectorXd diff = sigma_pts.col(i) - mean;
-
-        //angle normalization
-        while (diff(3) >  M_PI)
-            diff(3) -= 2.0*M_PI;
-        while (diff(3) < -M_PI)
-            diff(3) += 2.0 * M_PI;
-
+        diff = NormalizeStateVector(diff);
         cov += weights_(i) * diff * diff.transpose();
     }
 }
@@ -201,13 +195,7 @@ void RadarLidarUKF::MeasurementSpaceMeanAndCovariance(
         VectorXd diff = sigma_pts.col(i) - mean;
 
         //angle normalization
-        if (sensor_type == SensorDataPacket::RADAR)
-        {
-            while (diff(1) > M_PI)
-                diff(1) -= 2.0 * M_PI;
-            while (diff(1) < -M_PI)
-                diff(1) += 2.0 * M_PI;
-        }
+        diff = NormalizeMeasurementVector(diff, sensor_type);
 
         cov += weights_(i) * diff * diff.transpose();
     }
@@ -223,4 +211,36 @@ Eigen::VectorXd RadarLidarUKF::StateSpaceToCartesian(const Eigen::VectorXd &x)
                     x(2)*cos(x(3)), // vx
                     x(2)*sin(x(3)); // vy
     return cartesian;
+}
+
+VectorXd RadarLidarUKF::NormalizeStateVector(
+        const VectorXd &x)
+{
+    VectorXd x_norm = x;
+
+    // normalize the angle
+    while (x_norm(3) > M_PI)
+        x_norm(3) -= 2.0 * M_PI;
+    while (x_norm(3) < -M_PI)
+        x_norm(3) += 2.0 * M_PI;
+
+    return x_norm;
+}
+
+VectorXd RadarLidarUKF::NormalizeMeasurementVector(
+        const VectorXd &z,
+        SensorDataPacket::SensorType sensor_type)
+{
+    VectorXd z_norm = z;
+
+    if (sensor_type == SensorDataPacket::RADAR)
+    {
+        // normalize the angle
+        while (z_norm(1) > M_PI)
+            z_norm(1) -= 2.0 * M_PI;
+        while (z_norm(1) < -M_PI)
+            z_norm(1) += 2.0 * M_PI;
+    }
+
+    return z_norm;
 }

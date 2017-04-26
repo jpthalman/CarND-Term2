@@ -65,6 +65,12 @@ private:
 
     Eigen::VectorXd StateSpaceToCartesian(const Eigen::VectorXd &x);
 
+    Eigen::VectorXd NormalizeStateVector(const Eigen::VectorXd &x);
+
+    Eigen::VectorXd NormalizeMeasurementVector(
+            const Eigen::VectorXd &z,
+            SensorDataPacket::SensorType sensor_type);
+
     // noise covariance matrices for the radar and lidar
     Eigen::MatrixXd R_radar_;
     Eigen::MatrixXd R_lidar_;
