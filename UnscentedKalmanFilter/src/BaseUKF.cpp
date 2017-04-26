@@ -17,6 +17,8 @@ using namespace Eigen;
  *  - ProcessSpaceMeanAndCovariance
  *  - MeasurementSpaceMeanAndCovariance
  *  - StateSpaceToCartesian
+ *  - NormalizeMeasurementVector
+ *  - NormalizeStateVector
  *
  * @param n_states: The number of states that the UKF will track.
  * @param noise_stdevs: Vector of the noise values that correspond to the tracked states.
@@ -59,14 +61,7 @@ void BaseUKF::ProcessMeasurement(
      **********************************************************************************/
 
     if (!is_initialized_) {
-        try {
-            x_ = InitializeState(data);
-        }
-        catch (const std::exception &e) {
-            std::cerr << e.what() << std::endl;
-            exit(EXIT_FAILURE);
-        }
-
+        x_ = InitializeState(data);
         return;
     }
 
@@ -91,32 +86,20 @@ void BaseUKF::ProcessMeasurement(
      *                                      Update
      **********************************************************************************/
 
-    try {
-        // transform sigma points into the measurement space
-        Z_sigma_points_ = SigmaPointsToMeasurementSpace(X_sigma_points_, weights_, data.sensor_type);
+    // transform sigma points into the measurement space
+    Z_sigma_points_ = SigmaPointsToMeasurementSpace(X_sigma_points_, weights_, data.sensor_type);
 
-        // get the mean and covariance of the new sigma points
-        MeasurementSpaceMeanAndCovariance(Z_sigma_points_, data.sensor_type, z_, S_);
-    }
-    catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    // get the mean and covariance of the new sigma points
+    MeasurementSpaceMeanAndCovariance(Z_sigma_points_, data.sensor_type, z_, S_);
 
     // calculate the kalman gain
-    CalculateKalmanGain();
+    CalculateKalmanGain(data.sensor_type);
 
     // update the state and covariance
     VectorXd z_diff = data.observations - z_;
 
     // normalize the angles
-    if (data.sensor_type == SensorDataPacket::RADAR)
-    {
-        while (z_diff(1) > M_PI)
-            z_diff(1) -= 2.0 * M_PI;
-        while (z_diff(1) < -M_PI)
-            z_diff(1) += 2.0 * M_PI;
-    }
+    z_diff = NormalizeMeasurementVector(z_diff, data.sensor_type);
 
     // update the state and covariance
     x_ += K_ * z_diff;
@@ -158,28 +141,17 @@ void BaseUKF::GenerateSigmaPoints(
  * Using the state and measurement space sigma points, mean, and covariance matrix, calculate the
  * Kalman gain matrix and store it in K_.
  * */
-void BaseUKF::CalculateKalmanGain()
+void BaseUKF::CalculateKalmanGain(const SensorDataPacket::SensorType sensor_type)
 {
     MatrixXd cross_correlation = MatrixXd(x_.size(), z_.size());
     cross_correlation.fill(0.0);
 
     for (int i = 0; i < weights_.size(); ++i) {
         VectorXd x_diff = X_sigma_points_.col(i) - x_;
-
-        while (x_diff(3) > M_PI)
-            x_diff(3) -= 2.0 * M_PI;
-        while (x_diff(3) < -M_PI)
-            x_diff(3) += 2.0 * M_PI;
+        x_diff = NormalizeStateVector(x_diff);
 
         VectorXd z_diff = Z_sigma_points_.col(i) - z_;
-
-        if (z_.size() == 3)
-        {
-            while (z_diff(1) > M_PI)
-                z_diff(1) -= 2.0 * M_PI;
-            while (z_diff(1) < -M_PI)
-                z_diff(1) += 2.0 * M_PI;
-        }
+        z_diff = NormalizeMeasurementVector(z_diff, sensor_type);
 
         cross_correlation += weights_(i) * x_diff * z_diff.transpose();
     }

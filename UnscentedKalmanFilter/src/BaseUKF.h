@@ -114,6 +114,23 @@ protected:
     virtual Eigen::VectorXd StateSpaceToCartesian(
             const Eigen::VectorXd &x) = 0;
 
+    /**
+     * Normalizes a vector in state space.
+     *
+     * @param x: Un-normalized state vector.
+     * */
+    virtual Eigen::VectorXd NormalizeStateVector(
+            const Eigen::VectorXd &x) = 0;
+
+    /**
+     * Normalizes a vector in measurement space.
+     *
+     * @param x: Un-normalized state vector.
+     * */
+    virtual Eigen::VectorXd NormalizeMeasurementVector(
+            const Eigen::VectorXd &z,
+            SensorDataPacket::SensorType sensor_type) = 0;
+
     const int n_states_;
     const int n_aug_states_;
     bool is_initialized_;
@@ -142,8 +159,10 @@ private:
     /**
      * Using the state and measurement space sigma points, mean, and covariance matrix, calculate the
      * Kalman gain matrix and store it in K_.
+     *
+     * @param sensor_type: Sensor type of the current measurement.
      * */
-    void CalculateKalmanGain();
+    void CalculateKalmanGain(const SensorDataPacket::SensorType sensor_type);
 
     int lambda_;
 
