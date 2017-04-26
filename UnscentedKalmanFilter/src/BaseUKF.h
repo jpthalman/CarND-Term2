@@ -146,6 +146,12 @@ private:
      * */
     void PredictState(const SensorDataPacket &data, const double dt);
 
+    /**
+     * Update the current state and covariance using the observed measurement.
+     *
+     * @param measurement: The observed measurement vector.
+     * @param sensor_type: The type of sensor the measurement came from.
+     * */
     Eigen::VectorXd UpdateState(const Eigen::VectorXd &measurement, const SensorDataPacket::SensorType &sensor_type);
 
     /**
