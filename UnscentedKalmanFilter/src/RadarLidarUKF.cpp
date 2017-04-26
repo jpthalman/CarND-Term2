@@ -184,7 +184,7 @@ Gaussian RadarLidarUKF::MeasurementSpaceMeanAndCovariance(
 {
     VectorXd mean = sigma_pts * weights_;
 
-    VectorXd cov = MatrixXd(sigma_pts.rows(), sigma_pts.rows());
+    MatrixXd cov = MatrixXd(sigma_pts.rows(), sigma_pts.rows());
     cov.fill(0.0);
 
     // for each sigma point
