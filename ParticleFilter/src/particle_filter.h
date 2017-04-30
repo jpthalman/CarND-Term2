@@ -12,12 +12,15 @@
 #include "helper_functions.h"
 
 struct Particle {
-
 	int id;
 	double x;
 	double y;
 	double theta;
 	double weight;
+
+	Particle() = default;
+    Particle(double init_x, double init_y, double init_theta) :
+            x(init_x), y(init_y), theta(init_theta), weight(1.0) {}
 };
 
 
