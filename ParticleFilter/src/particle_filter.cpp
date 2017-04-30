@@ -12,15 +12,26 @@
 
 #include "particle_filter.h"
 
-void ParticleFilter::init(double x, double y, double theta, double std[]) {
-	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of 
-	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
-	// Add random Gaussian noise to each particle.
-	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
+void ParticleFilter::init(double x, double y, double theta, double std[])
+{
+    std::default_random_engine gen;
 
+    double  std_x = std[0],
+            std_y = std[1],
+            std_theta = std[2];
+
+    std::normal_distribution<double>
+            dist_x(x, std_x),
+            dist_y(y, std_y),
+            dist_theta(theta, std_theta);
+
+    // num_particles is set with the constructor for this class, with a default of 1000.
+    for (int i = 0; i < num_particles; ++i)
+        particles.push_back( Particle(dist_x(gen), dist_y(gen), dist_theta(gen)) );
 }
 
-void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate) {
+void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate)
+{
 	// TODO: Add measurements to each particle and add random Gaussian noise.
 	// NOTE: When adding noise you may find std::normal_distribution and std::default_random_engine useful.
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
