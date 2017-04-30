@@ -12,7 +12,11 @@
 
 #include "particle_filter.h"
 
-void ParticleFilter::init(double x, double y, double theta, double std[])
+void ParticleFilter::init(
+        double x,
+        double y,
+        double theta,
+        double std[])
 {
     std::default_random_engine gen;
 
@@ -27,18 +31,22 @@ void ParticleFilter::init(double x, double y, double theta, double std[])
             dist_theta(theta, std_theta);
 
     // num_particles is set with the constructor for this class, with a default of 1000.
-    for (int i = 0; i < num_particles; ++i)
-        particles.push_back( Particle(dist_x(gen), dist_y(gen), dist_theta(gen)) );
+    for (int i = 0; i < n_particles_; ++i)
+        particles_.push_back( Particle(dist_x(gen), dist_y(gen), dist_theta(gen)) );
 }
 
-void ParticleFilter::prediction(double delta_t, double std_pos[], double velocity, double yaw_rate)
+void ParticleFilter::prediction(
+        double delta_t,
+        double std_pos[],
+        double velocity,
+        double yaw_rate)
 {
     // instantiate RNG
     std::default_random_engine gen;
     std::normal_distribution<double> std_normal(0, 1);
 
     // predict the state of each particle at t+dt
-    for (Particle &p : particles)
+    for (Particle &p : particles_)
     {
         double  x_noise = std_pos[0] * std_normal(gen),
                 y_noise = std_pos[1] * std_normal(gen),
@@ -68,16 +76,22 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     return;
 }
 
-void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
+void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations)
+{
 	// TODO: Find the predicted measurement that is closest to each observed measurement and assign the 
 	//   observed measurement to this particular landmark.
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
 
+
 }
 
-void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
-		std::vector<LandmarkObs> observations, Map map_landmarks) {
+void ParticleFilter::updateWeights(
+        double sensor_range,
+        double std_landmark[],
+		std::vector<LandmarkObs> observations,
+        Map map_landmarks)
+{
 	// TODO: Update the weights of each particle using a mult-variate Gaussian distribution. You can read
 	//   more about this distribution here: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
 	// NOTE: The observations are given in the VEHICLE'S coordinate system. Your particles are located
@@ -91,19 +105,30 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   http://planning.cs.uiuc.edu/node99.html
 }
 
-void ParticleFilter::resample() {
-	// TODO: Resample particles with replacement with probability proportional to their weight. 
-	// NOTE: You may find std::discrete_distribution helpful here.
-	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
+void ParticleFilter::resample()
+{
+    // Create random index generator where the probability of each particle index to be selected
+    // is equivalent to its weight.
+    std::default_random_engine gen;
+    std::discrete_distribution<int> d(weights_.begin(), weights_.end());
 
+    // temporary list to store resampled particles
+    std::vector<Particle> resampled_particles;
+
+    // generate a random index and append the corresponding particle to the resampling list
+    for (int i = 0; i < n_particles_; ++i)
+        resampled_particles.push_back( particles_[d(gen)] );
+
+    // replace the old particles with the resampled particles
+    particles_ = resampled_particles;
 }
 
-void ParticleFilter::write(std::string filename) {
-	// You don't need to modify this file.
-	std::ofstream dataFile;
-	dataFile.open(filename, std::ios::app);
-	for (int i = 0; i < num_particles; ++i) {
-		dataFile << particles[i].x << " " << particles[i].y << " " << particles[i].theta << "\n";
-	}
+void ParticleFilter::write(std::string filename)
+{
+	std::ofstream dataFile(filename, std::ios::app);
+
+	for (int i = 0; i < n_particles_; ++i)
+		dataFile << particles_[i].x << " " << particles_[i].y << " " << particles_[i].theta << "\n";
+
 	dataFile.close();
 }
