@@ -49,7 +49,7 @@ struct LandmarkObs {
  * @param (x2,y2) x and y coordinates of second point
  * @output Euclidean distance between two 2D points
  */
-inline double dist(double x1, double y1, double x2, double y2) {
+inline double euclidean_distance(double x1, double y1, double x2, double y2) {
 	return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
