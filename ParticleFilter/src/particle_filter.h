@@ -44,7 +44,7 @@ public:
 
 	// Constructor
 	// @param M Number of particles
-	ParticleFilter(int init_n_particles = 1000) :
+	ParticleFilter(int init_n_particles = 500) :
 			n_particles_(init_n_particles), is_initialized_(false) {}
 
 	// Destructor
@@ -101,8 +101,9 @@ public:
 	/**
 	 * write Writes particle positions to a file.
 	 * @param filename File to write particle positions to.
+	 * @param delimiter Separator for the values in each line.
 	 */
-	void write(std::string filename);
+	void ParticleFilter::write(std::string filename, std::string delimiter);
 	
 	/**
 	 * initialized Returns whether particle filter is initialized yet or not.
