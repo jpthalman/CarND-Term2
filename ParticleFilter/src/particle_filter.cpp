@@ -53,11 +53,8 @@ void ParticleFilter::prediction(
     // predict the state of each particle at t+dt
     for (Particle &p : particles_)
     {
-        double  x_noise = std_pos[0] * std_normal(gen),
-                y_noise = std_pos[1] * std_normal(gen),
-                yaw_noise = std_pos[2] * std_normal(gen);
-
-        if (yaw_rate > 1e-3)
+        // don't divide by zero
+        if (fabs(yaw_rate) > 1e-3)
         {
             p.x += (velocity / yaw_rate) * (sin(p.theta + yaw_rate * delta_t) - sin(p.theta));
             p.y += (velocity / yaw_rate) * (cos(p.theta) - cos(p.theta + yaw_rate * delta_t));
@@ -68,15 +65,15 @@ void ParticleFilter::prediction(
             p.theta += yaw_rate * delta_t;
         }
 
-        double dt2 = pow(delta_t, 2);
-
         // add noise
+        double  dt2 = pow(delta_t, 2),
+                x_noise = std_pos[0] * std_normal(gen),
+                y_noise = std_pos[1] * std_normal(gen),
+                yaw_noise = std_pos[2] * std_normal(gen);
+
         p.x += 0.5 * dt2 * x_noise;
         p.y += 0.5 * dt2 * y_noise;
         p.theta += 0.5 * dt2 * yaw_noise;
-
-        // angle normalization
-        p.theta = atan2(sin(p.theta), cos(p.theta));
     } // end particle updates
 
     return;
@@ -92,15 +89,18 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
         // for each predicted landmark location
         for (int i = 0; i < predicted.size(); ++i)
         {
-            double dist = euclidean_distance(obs.x, obs.y, predicted[i].x, predicted[i].y);
-
-            if (dist < min_distance)
+            // only associate predictions with one landmark
+            if (predicted[i].id == 0)
             {
-                obs.id = i;
-                min_distance = dist;
+                double dist = euclidean_distance(obs.x, obs.y, predicted[i].x, predicted[i].y);
+
+                if (dist < min_distance) {
+                    obs.id = i;
+                    min_distance = dist;
+                }
             }
-        }
-    }
+        } // end prediction loop
+    } // end landmark loop
 
     return;
 }
@@ -111,6 +111,9 @@ void ParticleFilter::updateWeights(
 		std::vector<LandmarkObs> observations,
         Map map_landmarks)
 {
+    // clear the weights so they can be updated
+    weights_.clear();
+
     const double    std_x = std_landmark[0],
                     std_y = std_landmark[1],
                     c = 0.5 / (M_PI * std_x * std_y); // constant used to calculate multivariate normal dist.
@@ -145,7 +148,6 @@ void ParticleFilter::updateWeights(
 
         // calculate the weight of the particle
         double prob = 1.0;
-        weights_.clear();
 
         for (const LandmarkObs &lm : landmarks_in_sensor_range)
         {
@@ -156,6 +158,10 @@ void ParticleFilter::updateWeights(
 
             prob *= c * exp(-0.5 * (x_diff + y_diff));
         }
+
+        // Don't let a particle have zero probability of being chosen
+        if (prob < 1e-4)
+            prob = 1e-4;
 
         // store the probability of this particle being real in the weight member and the weights_ vector.
         p.weight = prob;
@@ -170,14 +176,14 @@ void ParticleFilter::resample()
     std::default_random_engine gen;
     std::discrete_distribution<int> d(weights_.begin(), weights_.end());
 
-    // temporary list to store resampled particles
+    // temporary list to store re-sampled particles
     std::vector<Particle> resampled_particles;
 
-    // generate a random index and append the corresponding particle to the resampling list
+    // generate a random index and append the corresponding particle to the re-sampling list
     for (int i = 0; i < n_particles_; ++i)
         resampled_particles.push_back( particles_[d(gen)] );
 
-    // replace the old particles with the resampled particles
+    // replace the old particles with the re-sampled particles
     particles_ = resampled_particles;
 }
 
