@@ -103,7 +103,7 @@ public:
 	 * @param filename File to write particle positions to.
 	 * @param delimiter Separator for the values in each line.
 	 */
-	void ParticleFilter::write(std::string filename, std::string delimiter);
+	void write(std::string filename, std::string delimiter);
 	
 	/**
 	 * initialized Returns whether particle filter is initialized yet or not.
