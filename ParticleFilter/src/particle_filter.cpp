@@ -33,6 +33,8 @@ void ParticleFilter::init(
     // num_particles is set with the constructor for this class, with a default of 1000.
     for (int i = 0; i < n_particles_; ++i)
         particles_.push_back( Particle(dist_x(gen), dist_y(gen), dist_theta(gen)) );
+
+    is_initialized_ = true;
 }
 
 void ParticleFilter::prediction(
@@ -84,16 +86,16 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
     // for each observed landmark
     for (LandmarkObs &obs : observations)
     {
-        double min_distance = 99999;
+        double min_distance = 1e6;
 
         // for each predicted landmark location
-        for (const LandmarkObs &pred : predicted)
+        for (int i = 0; i < predicted.size(); ++i)
         {
-            double dist = euclidean_distance(obs.x, obs.y, pred.x, pred.y);
+            double dist = euclidean_distance(obs.x, obs.y, predicted[i].x, predicted[i].y);
 
             if (dist < min_distance)
             {
-                obs.id = pred.id;
+                obs.id = i;
                 min_distance = dist;
             }
         }
@@ -108,17 +110,58 @@ void ParticleFilter::updateWeights(
 		std::vector<LandmarkObs> observations,
         Map map_landmarks)
 {
-	// TODO: Update the weights of each particle using a mult-variate Gaussian distribution. You can read
-	//   more about this distribution here: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
-	// NOTE: The observations are given in the VEHICLE'S coordinate system. Your particles are located
-	//   according to the MAP'S coordinate system. You will need to transform between the two systems.
-	//   Keep in mind that this transformation requires both rotation AND translation (but no scaling).
-	//   The following is a good resource for the theory:
-	//   https://www.willamette.edu/~gorr/classes/GeneralGraphics/Transforms/transforms2d.htm
-	//   and the following is a good resource for the actual equation to implement (look at equation 
-	//   3.33. Note that you'll need to switch the minus sign in that equation to a plus to account 
-	//   for the fact that the map's y-axis actually points downwards.)
-	//   http://planning.cs.uiuc.edu/node99.html
+    std::vector<LandmarkObs> observations_in_map_coords;
+    std::vector<LandmarkObs> landmarks_in_sensor_range;
+
+    double  std_x = std_landmark[0],
+            std_y = std_landmark[1],
+            c = 1.0 / (2.0 * M_PI * std_x * std_y); // constant used to calculate multivariate normal dist.
+
+    // for each particle
+    for (Particle &p : particles_)
+    {
+        // transform observations into map coordinates
+        for (const LandmarkObs &obs : observations)
+        {
+            LandmarkObs transformed_obs;
+
+            transformed_obs.x = p.x + obs.x * cos(p.theta) - obs.y * sin(p.theta);
+            transformed_obs.y = p.y + obs.x * sin(p.theta) + p.y * cos(p.theta);
+
+            observations_in_map_coords.push_back(transformed_obs);
+        }
+
+        // find landmarks in the map which are within sensor_range
+        for (Map::single_landmark_s &lm : map_landmarks.landmark_list)
+        {
+            if (euclidean_distance(p.x, p.y, lm.x_f, lm.y_f) <= sensor_range)
+                landmarks_in_sensor_range.push_back( LandmarkObs(lm) );
+        }
+
+        // associate in-range landmarks with transformed sensor readings
+        dataAssociation(observations_in_map_coords, landmarks_in_sensor_range);
+
+        // calculate the weight of the particle
+        double prob = 1.0;
+        weights_.clear();
+
+        for (const LandmarkObs &lm : landmarks_in_sensor_range)
+        {
+            const LandmarkObs &closest_obs = observations_in_map_coords[lm.id];
+
+            double x_diff = pow((closest_obs.x - lm.x) / std_x, 2);
+            double y_diff = pow((closest_obs.y - lm.y) / std_y, 2);
+
+            prob *= c * exp(-0.5 * (x_diff + y_diff));
+        }
+
+        // store the probability of this particle being real in the weight member and the weights_ vector.
+        p.weight = prob;
+        weights_.push_back(prob);
+
+        observations_in_map_coords.clear();
+        landmarks_in_sensor_range.clear();
+    }
 }
 
 void ParticleFilter::resample()
