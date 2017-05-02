@@ -71,6 +71,9 @@ void ParticleFilter::prediction(
         p.x += 0.5 * dt2 * x_noise;
         p.y += 0.5 * dt2 * y_noise;
         p.theta += 0.5 * dt2 * yaw_noise;
+
+        // angle normalization
+        p.theta = atan2(sin(p.theta), cos(p.theta));
     } // end particle updates
 
     return;
@@ -78,11 +81,6 @@ void ParticleFilter::prediction(
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs> &observations)
 {
-	// TODO: Find the predicted measurement that is closest to each observed measurement and assign the 
-	//   observed measurement to this particular landmark.
-	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
-	//   implement this method and use it as a helper during the updateWeights phase.
-
     // for each observed landmark
     for (LandmarkObs &obs : observations)
     {
