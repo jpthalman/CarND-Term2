@@ -5,10 +5,13 @@
  *      Author: Tiffany Huang
  */
 
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
 #include <random>
 #include <algorithm>
 #include <iostream>
-#include <numeric>
 
 #include "particle_filter.h"
 
@@ -59,9 +62,7 @@ void ParticleFilter::prediction(
             p.x += (velocity / yaw_rate) * (sin(p.theta + yaw_rate * delta_t) - sin(p.theta));
             p.y += (velocity / yaw_rate) * (cos(p.theta) - cos(p.theta + yaw_rate * delta_t));
             p.theta += yaw_rate * delta_t;
-        }
-        else if (yaw_rate < 1e-3)
-        {
+        } else {
             p.x += velocity * cos(p.theta) * delta_t;
             p.y += velocity * sin(p.theta) * delta_t;
             p.theta += yaw_rate * delta_t;
@@ -110,23 +111,24 @@ void ParticleFilter::updateWeights(
 		std::vector<LandmarkObs> observations,
         Map map_landmarks)
 {
-    std::vector<LandmarkObs> observations_in_map_coords;
-    std::vector<LandmarkObs> landmarks_in_sensor_range;
-
-    double  std_x = std_landmark[0],
-            std_y = std_landmark[1],
-            c = 1.0 / (2.0 * M_PI * std_x * std_y); // constant used to calculate multivariate normal dist.
+    const double    std_x = std_landmark[0],
+                    std_y = std_landmark[1],
+                    c = 0.5 / (M_PI * std_x * std_y); // constant used to calculate multivariate normal dist.
 
     // for each particle
     for (Particle &p : particles_)
     {
+        std::vector<LandmarkObs> observations_in_map_coords;
+        std::vector<LandmarkObs> landmarks_in_sensor_range;
+
         // transform observations into map coordinates
         for (const LandmarkObs &obs : observations)
         {
             LandmarkObs transformed_obs;
 
+            transformed_obs.id = 0;
             transformed_obs.x = p.x + obs.x * cos(p.theta) - obs.y * sin(p.theta);
-            transformed_obs.y = p.y + obs.x * sin(p.theta) + p.y * cos(p.theta);
+            transformed_obs.y = p.y + obs.x * sin(p.theta) + obs.y * cos(p.theta);
 
             observations_in_map_coords.push_back(transformed_obs);
         }
@@ -158,9 +160,6 @@ void ParticleFilter::updateWeights(
         // store the probability of this particle being real in the weight member and the weights_ vector.
         p.weight = prob;
         weights_.push_back(prob);
-
-        observations_in_map_coords.clear();
-        landmarks_in_sensor_range.clear();
     }
 }
 
@@ -182,12 +181,14 @@ void ParticleFilter::resample()
     particles_ = resampled_particles;
 }
 
-void ParticleFilter::write(std::string filename)
+void ParticleFilter::write(std::string filename, std::string delimiter = ",")
 {
 	std::ofstream dataFile(filename, std::ios::app);
 
 	for (int i = 0; i < n_particles_; ++i)
-		dataFile << particles_[i].x << " " << particles_[i].y << " " << particles_[i].theta << "\n";
+		dataFile << particles_[i].x << delimiter
+                 << particles_[i].y << delimiter
+                 << particles_[i].theta << std::endl;
 
 	dataFile.close();
 }
