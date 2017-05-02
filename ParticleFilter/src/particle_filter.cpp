@@ -35,7 +35,10 @@ void ParticleFilter::init(
 
     // num_particles is set with the constructor for this class, with a default of 1000.
     for (int i = 0; i < n_particles_; ++i)
-        particles_.push_back( Particle(dist_x(gen), dist_y(gen), dist_theta(gen)) );
+    {
+        Particle p_init = {dist_x(gen), dist_y(gen), dist_theta(gen)};
+        particles_.push_back(p_init);
+    }
 
     is_initialized_ = true;
 }
@@ -48,7 +51,10 @@ void ParticleFilter::prediction(
 {
     // instantiate RNG
     std::default_random_engine gen;
-    std::normal_distribution<double> std_normal(0, 1);
+    std::normal_distribution<double>
+            x_dist(0.0, std_pos[0]),
+            y_dist(0.0, std_pos[1]),
+            theta_dist(0.0, std_pos[2]);
 
     // predict the state of each particle at t+dt
     for (Particle &p : particles_)
@@ -66,14 +72,11 @@ void ParticleFilter::prediction(
         }
 
         // add noise
-        double  dt2 = pow(delta_t, 2),
-                x_noise = std_pos[0] * std_normal(gen),
-                y_noise = std_pos[1] * std_normal(gen),
-                yaw_noise = std_pos[2] * std_normal(gen);
+        double  dt2 = pow(delta_t, 2);
 
-        p.x += 0.5 * dt2 * x_noise;
-        p.y += 0.5 * dt2 * y_noise;
-        p.theta += 0.5 * dt2 * yaw_noise;
+        p.x += 0.5 * dt2 * x_dist(gen);
+        p.y += 0.5 * dt2 * y_dist(gen);
+        p.theta += 0.5 * dt2 * theta_dist(gen);
     } // end particle updates
 
     return;
@@ -166,7 +169,9 @@ void ParticleFilter::updateWeights(
         // store the probability of this particle being real in the weight member and the weights_ vector.
         p.weight = prob;
         weights_.push_back(prob);
-    }
+    } // end particle loop
+
+    return;
 }
 
 void ParticleFilter::resample()
