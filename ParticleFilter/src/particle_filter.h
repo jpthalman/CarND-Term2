@@ -11,7 +11,8 @@
 
 #include "helper_functions.h"
 
-struct Particle {
+struct Particle
+{
 	int id;
 	double x;
 	double y;
@@ -97,7 +98,7 @@ public:
 	 */
 	void resample();
 	
-	/*
+	/**
 	 * write Writes particle positions to a file.
 	 * @param filename File to write particle positions to.
 	 */
