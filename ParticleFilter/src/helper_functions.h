@@ -8,9 +8,10 @@
 #ifndef HELPER_FUNCTIONS_H_
 #define HELPER_FUNCTIONS_H_
 
+#define M_PI 3.14159265358979323846
+
 #include <sstream>
 #include <fstream>
-#include <math.h>
 #include <vector>
 #include "map.h"
 
