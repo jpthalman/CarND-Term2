@@ -1,46 +1,56 @@
 #ifndef PID_H
 #define PID_H
 
-class PID {
+class PID
+{
 public:
-  /*
-  * Errors
-  */
-  double p_error;
-  double i_error;
-  double d_error;
+    /**
+     * Constructor
+     */
+    PID(double target, double kp_init, double ki_init, double kd_init);
 
-  /*
-  * Coefficients
-  */ 
-  double Kp;
-  double Ki;
-  double Kd;
+    /**
+     * Destructor.
+     */
+    virtual ~PID();
 
-  /*
-  * Constructor
-  */
-  PID();
+    /**
+     * Update the PID error variables given cross track error and return the estimated value.
+     */
+    double Update(double cte);
 
-  /*
-  * Destructor.
-  */
-  virtual ~PID();
+    /**
+     * Change the target point for the PID
+     * */
+    void setTarget(double new_target) { set_point_ = new_target; }
 
-  /*
-  * Initialize PID.
-  */
-  void Init(double Kp, double Ki, double Kd);
+    /**
+     * Set the maximum value for the integral term. Helps prevent integral windup.
+     * */
+    void setMaxIntegral(double i_max) { max_integral_ = i_max; }
 
-  /*
-  * Update the PID error variables given cross track error.
-  */
-  void UpdateError(double cte);
+private:
+    // Target for the PID to converge to.
+    double set_point_;
 
-  /*
-  * Calculate the total PID error.
-  */
-  double TotalError();
+    // error at t-1, used for derivative calculation
+    double prev_error_;
+
+    // previous timestamp, used for dt calculation
+    std::time_t prev_timestamp_;
+
+    // max integral term
+    double max_integral_;
+
+    // errors
+    double p_error_;
+    double i_error_;
+    double d_error_;
+
+    // coefficients
+    double Kp_;
+    double Ki_;
+    double Kd_;
 };
 
 #endif /* PID_H */
