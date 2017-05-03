@@ -22,18 +22,12 @@ void ParticleFilter::init(
         double std[])
 {
     std::default_random_engine gen;
-
-    // shatter array for readability
-    double  std_x = std[0],
-            std_y = std[1],
-            std_theta = std[2];
-
     std::normal_distribution<double>
-            dist_x(x, std_x),
-            dist_y(y, std_y),
-            dist_theta(theta, std_theta);
+            dist_x(x, std[0]),
+            dist_y(y, std[1]),
+            dist_theta(theta, std[2]);
 
-    // num_particles is set with the constructor for this class, with a default of 1000.
+    // n_particles_ is set with the constructor for this class, with a default of 50.
     for (int i = 0; i < n_particles_; ++i)
     {
         Particle p_init = {dist_x(gen), dist_y(gen), dist_theta(gen)};
@@ -72,11 +66,9 @@ void ParticleFilter::prediction(
         }
 
         // add noise
-        double  dt2 = pow(delta_t, 2);
-
-        p.x += 0.5 * dt2 * x_dist(gen);
-        p.y += 0.5 * dt2 * y_dist(gen);
-        p.theta += 0.5 * dt2 * theta_dist(gen);
+        p.x += x_dist(gen);
+        p.y += y_dist(gen);
+        p.theta += theta_dist(gen);
     } // end particle updates
 
     return;
@@ -97,8 +89,9 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
             {
                 double dist = euclidean_distance(obs.x, obs.y, predicted[i].x, predicted[i].y);
 
-                if (dist < min_distance) {
-                    obs.id = i;
+                if (dist < min_distance)
+                {
+                    obs.id = i; // store the index of the current closest particle to the landmark
                     min_distance = dist;
                 }
             }
@@ -116,6 +109,7 @@ void ParticleFilter::updateWeights(
 {
     // clear the weights so they can be updated
     weights_.clear();
+    weights_.reserve( n_particles_ );
 
     const double    std_x = std_landmark[0],
                     std_y = std_landmark[1],
@@ -124,8 +118,9 @@ void ParticleFilter::updateWeights(
     // for each particle
     for (Particle &p : particles_)
     {
-        std::vector<LandmarkObs> observations_in_map_coords;
         std::vector<LandmarkObs> landmarks_in_sensor_range;
+        std::vector<LandmarkObs> observations_in_map_coords;
+        observations_in_map_coords.reserve( observations.size() );
 
         // transform observations into map coordinates
         for (const LandmarkObs &obs : observations)
@@ -156,8 +151,8 @@ void ParticleFilter::updateWeights(
         {
             const LandmarkObs &closest_obs = observations_in_map_coords[lm.id];
 
-            double x_diff = pow((closest_obs.x - lm.x) / std_x, 2);
-            double y_diff = pow((closest_obs.y - lm.y) / std_y, 2);
+            const double x_diff = pow((closest_obs.x - lm.x) / std_x, 2),
+                         y_diff = pow((closest_obs.y - lm.y) / std_y, 2);
 
             prob *= c * exp(-0.5 * (x_diff + y_diff));
         }
@@ -183,6 +178,7 @@ void ParticleFilter::resample()
 
     // temporary list to store re-sampled particles
     std::vector<Particle> resampled_particles;
+    resampled_particles.reserve( n_particles_ );
 
     // generate a random index and append the corresponding particle to the re-sampling list
     for (int i = 0; i < n_particles_; ++i)
@@ -196,10 +192,10 @@ void ParticleFilter::write(std::string filename, std::string delimiter = ",")
 {
 	std::ofstream dataFile(filename, std::ios::app);
 
-	for (int i = 0; i < n_particles_; ++i)
-		dataFile << particles_[i].x << delimiter
-                 << particles_[i].y << delimiter
-                 << particles_[i].theta << std::endl;
+	for (const Particle &p : particles_)
+		dataFile << p.x << delimiter
+                 << p.y << delimiter
+                 << p.theta << std::endl;
 
 	dataFile.close();
 }
