@@ -29,7 +29,7 @@ struct Particle
 class ParticleFilter
 {
 	// Number of particles to draw
-	int n_particles_;
+	unsigned n_particles_;
 
 	// Flag, if filter is initialized
 	bool is_initialized_;
@@ -44,7 +44,7 @@ public:
 
 	// Constructor
 	// @param M Number of particles
-	ParticleFilter(int init_n_particles = 500) :
+	ParticleFilter(int init_n_particles = 50) :
 			n_particles_(init_n_particles), is_initialized_(false) {}
 
 	// Destructor
