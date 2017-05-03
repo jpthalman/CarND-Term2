@@ -46,7 +46,7 @@ struct LandmarkObs {
 	double y;			// Local (vehicle coordinates) y position of landmark observation [m]
 
     LandmarkObs() = default;
-    LandmarkObs(Map::single_landmark_s &lm) :
+    LandmarkObs(const Map::single_landmark_s &lm) :
             id(lm.id_i), x(lm.x_f), y(lm.y_f) {}
 };
 
