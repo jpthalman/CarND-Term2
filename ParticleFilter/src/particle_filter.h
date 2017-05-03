@@ -11,8 +11,8 @@
 
 #include "helper_functions.h"
 
-struct Particle
-{
+struct Particle {
+
 	int id;
 	double x;
 	double y;
@@ -22,11 +22,13 @@ struct Particle
 
 
 
-class ParticleFilter
-{
+class ParticleFilter {
+	
 	// Number of particles to draw
-	int num_particles;
-
+	int num_particles; 
+	
+	
+	
 	// Flag, if filter is initialized
 	bool is_initialized;
 	
@@ -39,6 +41,7 @@ public:
 	std::vector<Particle> particles;
 
 	// Constructor
+	// @param M Number of particles
 	ParticleFilter() : num_particles(0), is_initialized(false) {}
 
 	// Destructor
@@ -83,10 +86,7 @@ public:
 	 * @param observations Vector of landmark observations
 	 * @param map Map class containing map landmarks
 	 */
-	void updateWeights(
-			double sensor_range,
-			double std_landmark[],
-			std::vector<LandmarkObs> observations,
+	void updateWeights(double sensor_range, double std_landmark[], std::vector<LandmarkObs> observations,
 			Map map_landmarks);
 	
 	/**
@@ -95,17 +95,18 @@ public:
 	 */
 	void resample();
 	
-	/**
+	/*
 	 * write Writes particle positions to a file.
 	 * @param filename File to write particle positions to.
-	 * @param delimiter Separator for the values in each line.
 	 */
 	void write(std::string filename);
 	
 	/**
 	 * initialized Returns whether particle filter is initialized yet or not.
 	 */
-	const bool initialized() const { return is_initialized; }
+	const bool initialized() const {
+		return is_initialized;
+	}
 };
 
 
