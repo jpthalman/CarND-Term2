@@ -28,15 +28,15 @@ void ParticleFilter::init(
             dist_theta(theta, std[2]);
 
     // n_particles_ is set with the constructor for this class, with a default of 50.
-    particles_.reserve(n_particles_);
+    particles.reserve(num_particles);
 
-    for (int i = 0; i < n_particles_; ++i)
+    for (int i = 0; i < num_particles; ++i)
     {
         Particle p_init = {dist_x(gen), dist_y(gen), dist_theta(gen)};
-        particles_.push_back(p_init);
+        particles.push_back(p_init);
     }
 
-    is_initialized_ = true;
+    is_initialized = true;
 }
 
 void ParticleFilter::prediction(
