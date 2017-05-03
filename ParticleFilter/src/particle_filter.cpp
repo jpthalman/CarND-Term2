@@ -93,12 +93,12 @@ void ParticleFilter::dataAssociation(
             // only associate predictions with one landmark
             if (predicted[i].id == 0)
             {
-                const double dist = euclidean_distance(obs.x, obs.y, predicted[i].x, predicted[i].y);
+                const double d = dist(obs.x, obs.y, predicted[i].x, predicted[i].y);
 
-                if (dist < min_distance)
+                if (d < min_distance)
                 {
                     obs.id = i; // store the index of the current closest particle to the landmark
-                    min_distance = dist;
+                    min_distance = d;
                 }
             }
         } // end prediction loop
@@ -143,7 +143,7 @@ void ParticleFilter::updateWeights(
         // find landmarks in the map which are within sensor_range of the current particle
         for (const Map::single_landmark_s &lm : map_landmarks.landmark_list)
         {
-            if (euclidean_distance(p.x, p.y, lm.x_f, lm.y_f) <= sensor_range)
+            if (dist(p.x, p.y, lm.x_f, lm.y_f) <= sensor_range)
             {
                 LandmarkObs lm_tmp = {lm.id_i, lm.x_f, lm.y_f};
                 landmarks_in_sensor_range.push_back(lm_tmp);
