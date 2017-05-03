@@ -28,6 +28,8 @@ void ParticleFilter::init(
             dist_theta(theta, std[2]);
 
     // n_particles_ is set with the constructor for this class, with a default of 50.
+    particles_.reserve(n_particles_);
+
     for (int i = 0; i < n_particles_; ++i)
     {
         Particle p_init = {dist_x(gen), dist_y(gen), dist_theta(gen)};
@@ -74,7 +76,9 @@ void ParticleFilter::prediction(
     return;
 }
 
-void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs> &observations)
+void ParticleFilter::dataAssociation(
+        const std::vector<LandmarkObs> &predicted,
+        std::vector<LandmarkObs> &observations)
 {
     // for each observed landmark
     for (LandmarkObs &obs : observations)
@@ -87,7 +91,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
             // only associate predictions with one landmark
             if (predicted[i].id == 0)
             {
-                double dist = euclidean_distance(obs.x, obs.y, predicted[i].x, predicted[i].y);
+                const double dist = euclidean_distance(obs.x, obs.y, predicted[i].x, predicted[i].y);
 
                 if (dist < min_distance)
                 {
@@ -104,8 +108,8 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 void ParticleFilter::updateWeights(
         double sensor_range,
         double std_landmark[],
-		std::vector<LandmarkObs> observations,
-        Map map_landmarks)
+		const std::vector<LandmarkObs> &observations,
+        const Map &map_landmarks)
 {
     // clear the weights so they can be updated
     weights_.clear();
@@ -122,7 +126,7 @@ void ParticleFilter::updateWeights(
         std::vector<LandmarkObs> observations_in_map_coords;
         observations_in_map_coords.reserve( observations.size() );
 
-        // transform observations into map coordinates
+        // transform observations into map coordinates using the perspective of the current particle
         for (const LandmarkObs &obs : observations)
         {
             LandmarkObs transformed_obs;
@@ -134,8 +138,8 @@ void ParticleFilter::updateWeights(
             observations_in_map_coords.push_back(transformed_obs);
         }
 
-        // find landmarks in the map which are within sensor_range
-        for (Map::single_landmark_s &lm : map_landmarks.landmark_list)
+        // find landmarks in the map which are within sensor_range of the current particle
+        for (const Map::single_landmark_s &lm : map_landmarks.landmark_list)
         {
             if (euclidean_distance(p.x, p.y, lm.x_f, lm.y_f) <= sensor_range)
                 landmarks_in_sensor_range.push_back( LandmarkObs(lm) );
@@ -155,11 +159,11 @@ void ParticleFilter::updateWeights(
                          y_diff = pow((closest_obs.y - lm.y) / std_y, 2);
 
             prob *= c * exp(-0.5 * (x_diff + y_diff));
-        }
 
-        // Don't let a particle have zero probability of being chosen
-        if (prob < 1e-4)
-            prob = 1e-4;
+            // Don't let a particle have zero probability of being chosen
+            if (prob < 1e-4)
+                break;
+        }
 
         // store the probability of this particle being real in the weight member and the weights_ vector.
         p.weight = prob;
