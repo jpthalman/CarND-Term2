@@ -21,6 +21,8 @@ void ParticleFilter::init(
         double theta,
         double std[])
 {
+    num_particles = 50;
+
     std::default_random_engine gen;
     std::normal_distribution<double>
             dist_x(x, std[0]),
@@ -32,7 +34,7 @@ void ParticleFilter::init(
 
     for (int i = 0; i < num_particles; ++i)
     {
-        Particle p_init = {dist_x(gen), dist_y(gen), dist_theta(gen)};
+        Particle p_init = {0, dist_x(gen), dist_y(gen), dist_theta(gen), 1};
         particles.push_back(p_init);
     }
 
@@ -53,7 +55,7 @@ void ParticleFilter::prediction(
             theta_dist(0.0, std_pos[2]);
 
     // predict the state of each particle at t+dt
-    for (Particle &p : particles_)
+    for (Particle &p : particles)
     {
         // don't divide by zero
         if (fabs(yaw_rate) > 1e-3)
@@ -77,7 +79,7 @@ void ParticleFilter::prediction(
 }
 
 void ParticleFilter::dataAssociation(
-        const std::vector<LandmarkObs> &predicted,
+        std::vector<LandmarkObs> predicted,
         std::vector<LandmarkObs> &observations)
 {
     // for each observed landmark
@@ -108,19 +110,19 @@ void ParticleFilter::dataAssociation(
 void ParticleFilter::updateWeights(
         double sensor_range,
         double std_landmark[],
-		const std::vector<LandmarkObs> &observations,
-        const Map &map_landmarks)
+		std::vector<LandmarkObs> observations,
+        Map map_landmarks)
 {
     // clear the weights so they can be updated
-    weights_.clear();
-    weights_.reserve( n_particles_ );
+    weights.clear();
+    weights.reserve( num_particles );
 
     const double    std_x = std_landmark[0],
                     std_y = std_landmark[1],
                     c = 0.5 / (M_PI * std_x * std_y); // constant used to calculate multivariate normal dist.
 
     // for each particle
-    for (Particle &p : particles_)
+    for (Particle &p : particles)
     {
         std::vector<LandmarkObs> landmarks_in_sensor_range;
         std::vector<LandmarkObs> observations_in_map_coords;
@@ -142,7 +144,10 @@ void ParticleFilter::updateWeights(
         for (const Map::single_landmark_s &lm : map_landmarks.landmark_list)
         {
             if (euclidean_distance(p.x, p.y, lm.x_f, lm.y_f) <= sensor_range)
-                landmarks_in_sensor_range.push_back( LandmarkObs(lm) );
+            {
+                LandmarkObs lm_tmp = {lm.id_i, lm.x_f, lm.y_f};
+                landmarks_in_sensor_range.push_back(lm_tmp);
+            }
         }
 
         // associate in-range landmarks with transformed sensor readings
@@ -167,7 +172,7 @@ void ParticleFilter::updateWeights(
 
         // store the probability of this particle being real in the weight member and the weights_ vector.
         p.weight = prob;
-        weights_.push_back(prob);
+        weights.push_back(prob);
     } // end particle loop
 
     return;
@@ -178,27 +183,27 @@ void ParticleFilter::resample()
     // Create random index generator where the probability of each particle index to be selected
     // is equivalent to its weight.
     std::default_random_engine gen;
-    std::discrete_distribution<int> d(weights_.begin(), weights_.end());
+    std::discrete_distribution<int> d(weights.begin(), weights.end());
 
     // temporary list to store re-sampled particles
     std::vector<Particle> resampled_particles;
-    resampled_particles.reserve( n_particles_ );
+    resampled_particles.reserve( num_particles );
 
     // generate a random index and append the corresponding particle to the re-sampling list
-    for (int i = 0; i < n_particles_; ++i)
-        resampled_particles.push_back( particles_[d(gen)] );
+    for (int i = 0; i < num_particles; ++i)
+        resampled_particles.push_back( particles[d(gen)] );
 
     // replace the old particles with the re-sampled particles
-    particles_ = resampled_particles;
+    particles = resampled_particles;
 }
 
-void ParticleFilter::write(std::string filename, std::string delimiter = ",")
+void ParticleFilter::write(std::string filename)
 {
 	std::ofstream dataFile(filename, std::ios::app);
 
-	for (const Particle &p : particles_)
-		dataFile << p.x << delimiter
-                 << p.y << delimiter
+	for (const Particle &p : particles)
+		dataFile << p.x << ","
+                 << p.y << ","
                  << p.theta << std::endl;
 
 	dataFile.close();
