@@ -1,5 +1,6 @@
 #include <ctime>
 #include <cmath>
+#include <iostream>
 #include "PID.h"
 
 PID::PID(double target, double kp_init, double ki_init, double kd_init) :
@@ -26,8 +27,10 @@ double PID::Update(double cte)
     double dt = ((current_timestamp != 0) ? (current_timestamp - prev_timestamp_) / 1e6 : 1.0);
 
     p_error_ = set_point_ - cte;
-    d_error_ = (p_error_ - prev_error_) / dt;
-    i_error_ += d_error_;
+    d_error_ = (p_error_ - prev_error_);
+    i_error_ += p_error_;
+
+    std::cout << "P:" << p_error_ << " I:" << i_error_ << " D:" << dt << std::endl;
 
     // prevent integral windup
     if (fabs(i_error_) > max_integral_)
