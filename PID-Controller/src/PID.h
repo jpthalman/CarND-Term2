@@ -17,17 +17,22 @@ public:
     /**
      * Update the PID error variables given cross track error and return the estimated value.
      */
-    double Update(double cte);
+    double Update(const double cte);
 
     /**
      * Change the target point for the PID
      * */
-    void setTarget(double new_target) { set_point_ = new_target; }
+    void setTarget(const double new_target) { set_point_ = new_target; }
+
+    /**
+     * Change the terms of the PID
+     * */
+    void resetTerms(const double kp_init, const double ki_init, const double kd_init);
 
     /**
      * Set the maximum value for the integral term. Helps prevent integral windup.
      * */
-    void setMaxIntegral(double i_max) { max_integral_ = i_max; }
+    void setMaxIntegral(const double i_max) { max_integral_ = i_max; }
 
 private:
     // Target for the PID to converge to.
@@ -35,9 +40,6 @@ private:
 
     // error at t-1, used for derivative calculation
     double prev_error_;
-
-    // previous timestamp, used for dt calculation
-    std::time_t prev_timestamp_;
 
     // max integral term
     double max_integral_;
