@@ -7,7 +7,7 @@ PID::PID(double target, double kp_init, double ki_init, double kd_init) :
         set_point_(target), Kp_(kp_init), Ki_(ki_init), Kd_(kd_init)
 {
     // initialize errors to zero
-    p_error_ = i_error_ = d_error_ = 0;
+    p_error_ = i_error_ = d_error_ = prev_error_ = 0;
 
     // set max integral to a really big value
     max_integral_ = 1e9;
