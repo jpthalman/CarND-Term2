@@ -1,6 +1,4 @@
-#include <ctime>
 #include <cmath>
-#include <iostream>
 #include "PID.h"
 
 PID::PID(double target, double kp_init, double ki_init, double kd_init) :
@@ -18,15 +16,13 @@ PID::~PID() {}
 double PID::Update(const double cte)
 {
     p_error_ = set_point_ - cte;
-    d_error_ = (p_error_ - prev_error_);
+    d_error_ = p_error_ - prev_error_;
     i_error_ += p_error_;
 
     // prevent integral windup
     if (fabs(i_error_) > max_integral_)
         // multiply max_integral_ by the sign of the current integral
         i_error_ = max_integral_ * ((i_error_ > 0) ? 1.0 : ((i_error_ < 0) ? -1.0 : 0.0));
-
-//    std::cout << "P:" << p_error_ << " I:" << i_error_ << " D:" << d_error_ << std::endl;
 
     prev_error_ = p_error_;
 
