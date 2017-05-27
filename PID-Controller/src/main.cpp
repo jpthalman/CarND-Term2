@@ -31,10 +31,6 @@ std::string hasData(std::string s) {
 int main()
 {
   uWS::Hub h;
-
-  // TODO: tune these values
-  // 0.1 0.0009 0.9
-  // 0.25 0.0 1.9
   PID steering(0.0, 0.1, 0.0009, 0.9);
   PID throttle(50, 0.1, 0.001, 0.9);
 
