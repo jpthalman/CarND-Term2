@@ -9,17 +9,22 @@
 #include "MPC.h"
 #include "json.hpp"
 
+//===========================================================================================================
 // for convenience
 using json = nlohmann::json;
 using std::string;
 using std::cout;
 using std::endl;
 
+
+//-----------------------------------------------------------------------------------------------------------
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
+
+//-----------------------------------------------------------------------------------------------------------
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
@@ -36,6 +41,8 @@ string hasData(const string s)
     return "";
 }
 
+
+//-----------------------------------------------------------------------------------------------------------
 // Evaluate a polynomial.
 double polyeval(const Eigen::VectorXd coeffs, const double x)
 {
@@ -47,6 +54,8 @@ double polyeval(const Eigen::VectorXd coeffs, const double x)
     return result;
 }
 
+
+//-----------------------------------------------------------------------------------------------------------
 // Fit a polynomial.
 // Adapted from
 // https://github.com/JuliaMath/Polynomials.jl/blob/master/src/Polynomials.jl#L676-L716
@@ -66,6 +75,38 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals, int order)
     auto Q = A.householderQr();
     return Q.solve(yvals);
 }
+
+
+//-----------------------------------------------------------------------------------------------------------
+Eigen::MatrixXd TransformWaypointsToVehicleCoords(
+        const vector<double>& ptsx,
+        const vector<double>& ptsy,
+        const double px,
+        const double py,
+        const double psi)
+{
+    Eigen::MatrixXd coordinates(ptsx.size(), 2);
+    coordinates <<  Eigen::Map<const Eigen::VectorXd>(ptsx.data(), ptsx.size()),
+                    Eigen::Map<const Eigen::VectorXd>(ptsy.data(), ptsy.size());
+
+    coordinates.rowwise() -= Eigen::RowVector2d(px, py);
+
+    Eigen::Matrix2d T;
+    T << cos(-psi), -sin(-psi), -sin(-psi), -cos(-psi);
+
+    return coordinates * T.transpose();
+}
+
+
+//-----------------------------------------------------------------------------------------------------------
+inline
+double CalculateOrientationError(const Eigen::VectorXd& c)
+{
+    return -atan( c(1) );
+}
+
+
+//-----------------------------------------------------------------------------------------------------------
 
 int main()
 {
@@ -91,21 +132,26 @@ int main()
 
                 if (event == "telemetry") {
                     // j[1] is the data JSON object
-                    vector<double> ptsx = j[1]["ptsx"];
-                    vector<double> ptsy = j[1]["ptsy"];
-                    double px = j[1]["x"];
-                    double py = j[1]["y"];
-                    double psi = j[1]["psi"];
-                    double v = j[1]["speed"];
+                    const vector<double> ptsx = j[1]["ptsx"];
+                    const vector<double> ptsy = j[1]["ptsy"];
+                    const double px = j[1]["x"];
+                    const double py = j[1]["y"];
+                    const double psi = j[1]["psi"];
+                    const double v = j[1]["speed"];
 
-                    /*
-                    * TODO: Calculate steering angle and throttle using MPC.
-                    *
-                    * Both are in between [-1, 1].
-                    *
-                    */
-                    double steer_value;
-                    double throttle_value;
+                    const Eigen::MatrixXd trans_waypts = TransformWaypointsToVehicleCoords(ptsx, ptsy, px, py, psi);
+                    const Eigen::VectorXd coeffs = polyfit(trans_waypts.col(0), trans_waypts.col(1), 3);
+                    const double cte = polyeval(coeffs, 0);
+                    const double epsi = CalculateOrientationError(coeffs);
+
+                    Eigen::VectorXd state(6);
+                    state << 0, 0, 0, v, cte, epsi;
+                    std::cout << state << std::endl << std::endl << coeffs;
+
+                    const vector<double> results = mpc.Solve(state, coeffs);
+
+                    const double steer_value = rad2deg( results.at(0) ) / 25.;
+                    const double throttle_value = results.at(1);
 
                     json msgJson;
                     // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
