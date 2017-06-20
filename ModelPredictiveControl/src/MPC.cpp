@@ -2,11 +2,12 @@
 #include "MPC.h"
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>
+#include <chrono>
 #include "Eigen-3.3/Eigen/Core"
 
 using CppAD::AD;
 
-const int   N = 15;
+const int   N = 8;
 const float dt = 0.1,
             Lf = 2.67;
 
@@ -23,7 +24,8 @@ const int   idx_x = 0,
             idx_delta = idx_epsi + N,
             idx_a = idx_delta + N - 1;
 
-class FG_eval {
+class FG_eval
+{
 public:
     using ADvector = CPPAD_TESTVECTOR(AD<double>);
 
@@ -34,28 +36,27 @@ public:
 
     void operator()(ADvector& fg, const ADvector& vars)
     {
-        auto& cost = fg[0];
-        cost = 0;
+        fg[0] = 0;
 
         for (int i = 0; i < N; ++i)
         {
             // the part of the cost based on the reference state
-            cost += CppAD::pow(vars[idx_cte + i] - ref_cte, 2);
-            cost += CppAD::pow(vars[idx_epsi + i] - ref_epsi, 2);
-            cost += CppAD::pow(vars[idx_v + i] - ref_v, 2);
+            fg[0] += 2000.0 * CppAD::pow(vars[idx_cte + i] - ref_cte, 2);
+            fg[0] += 2000.0 * CppAD::pow(vars[idx_epsi + i] - ref_epsi, 2);
+            fg[0] += 2.0 * CppAD::pow(vars[idx_v + i] - ref_v, 2);
 
             // minimize the use of actuators
-            if (i <= N - 1)
+            if (i < N - 1)
             {
-                cost += CppAD::pow(vars[idx_delta + i], 2);
-                cost += CppAD::pow(vars[idx_a + i], 2);
+                fg[0] += 3.0 * CppAD::pow(vars[idx_delta + i], 2);
+                fg[0] += 3.0 * CppAD::pow(vars[idx_a + i], 2);
             }
 
             // minimize the value gap between sequential actuations
-            if (i <= N - 2)
+            if (i < N - 2)
             {
-                cost += CppAD::pow(vars[idx_delta + i + 1] - vars[idx_delta + i], 2);
-                cost += CppAD::pow(vars[idx_a + i + 1] - vars[idx_a + i], 2);
+                fg[0] += 500.0 * CppAD::pow(vars[idx_delta + i + 1] - vars[idx_delta + i], 2);
+                fg[0] += 5.0 * CppAD::pow(vars[idx_a + i + 1] - vars[idx_a + i], 2);
             }
         }
 
@@ -90,15 +91,17 @@ public:
             AD<double> delta0 = vars[idx_delta + i];
             AD<double> a0 = vars[idx_a + i];
 
-            AD<double> f0 = coeffs_[0] + coeffs_[1] * x0;
-            AD<double> psides0 = CppAD::atan(coeffs_[1]);
+            AD<double> f0 = coeffs_[0] + coeffs_[1] * x0 + coeffs_[2]*x0*x0 + coeffs_[3]*x0*x0*x0;
+            AD<double> psides0 = CppAD::atan(3*coeffs_[3] * x0 * x0 + 2 * coeffs_[2] * x0 + coeffs_[1]);
 
             fg[2 + idx_x + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
             fg[2 + idx_y + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-            fg[2 + idx_psi + i] = psi1 - (psi0 + v0 * delta0 / Lf * dt);
+            fg[2 + idx_psi + i] = psi1 - (psi0 - v0 * delta0 / Lf * dt);
             fg[2 + idx_v + i] = v1 - (v0 + a0 * dt);
-            fg[2 + idx_cte + i] = cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
-            fg[2 + idx_epsi + i] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+            fg[2 + idx_cte + i] =
+                    cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+            fg[2 + idx_epsi + i] =
+                    epsi1 - ((psi0 - psides0) - v0 * delta0 / Lf * dt);
         }
     }
 
@@ -116,9 +119,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
 {
     typedef CPPAD_TESTVECTOR(double) Dvector;
 
-    bool ok = true;
-
-    double  x = state[0],
+    const double
+            x = state[0],
             y = state[1],
             psi = state[2],
             v = state[3],
@@ -134,13 +136,13 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
     for (int i = 0; i < n_vars; ++i)
         vars[i] = 0;
 
-//    // set initial variable values
-//    vars[idx_x] = x;
-//    vars[idx_y] = y;
-//    vars[idx_psi] = psi;
-//    vars[idx_v] = v;
-//    vars[idx_cte] = cte;
-//    vars[idx_epsi] = epsi;
+    //load independent variables to current values
+    vars[idx_x] = x;
+    vars[idx_y] = y;
+    vars[idx_psi] = psi;
+    vars[idx_v] = v;
+    vars[idx_cte] = cte;
+    vars[idx_epsi] = epsi;
 
     // lower and upper limits for x
     Dvector vars_lowerbound(n_vars);
@@ -164,8 +166,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
     // set acceleration bounds to 1
     for (int i = idx_a; i < n_vars; ++i)
     {
-        vars_lowerbound[i] = -1.;
-        vars_upperbound[i] = 1.;
+        vars_lowerbound[i] = -1.0;
+        vars_upperbound[i] = 1.0;
     }
 
     // Lower and upper limits for the constraints
@@ -219,14 +221,19 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
       constraints_upperbound, fg_eval, solution);
 
     // Check some of the solution values
+    bool ok = true;
     ok &= solution.status == CppAD::ipopt::solve_result<Dvector>::success;
 
     // Cost
     auto cost = solution.obj_value;
-    std::cout << "Cost " << cost << std::endl;
 
-    return {solution.x[idx_x + 1],   solution.x[idx_y + 1],
-            solution.x[idx_psi + 1], solution.x[idx_v + 1],
-            solution.x[idx_cte + 1], solution.x[idx_epsi + 1],
-            solution.x[idx_delta],   solution.x[idx_a]};
+    vector<double> retValue;
+    retValue.push_back(solution.x[idx_delta]);
+    retValue.push_back(solution.x[idx_a]);
+    for(int i=0;i<N-1;i++)
+    {
+        retValue.push_back(solution.x[idx_x+i]);
+        retValue.push_back(solution.x[idx_y+i]);
+    }
+    return retValue;
 }

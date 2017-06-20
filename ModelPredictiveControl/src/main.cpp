@@ -77,37 +77,6 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals, int order)
 }
 
 
-//-----------------------------------------------------------------------------------------------------------
-Eigen::MatrixXd TransformWaypointsToVehicleCoords(
-        const vector<double>& ptsx,
-        const vector<double>& ptsy,
-        const double px,
-        const double py,
-        const double psi)
-{
-    Eigen::MatrixXd coordinates(ptsx.size(), 2);
-    coordinates <<  Eigen::Map<const Eigen::VectorXd>(ptsx.data(), ptsx.size()),
-                    Eigen::Map<const Eigen::VectorXd>(ptsy.data(), ptsy.size());
-
-    coordinates.rowwise() -= Eigen::RowVector2d(px, py);
-
-    Eigen::Matrix2d T;
-    T << cos(-psi), -sin(-psi), -sin(-psi), -cos(-psi);
-
-    return coordinates * T.transpose();
-}
-
-
-//-----------------------------------------------------------------------------------------------------------
-inline
-double CalculateOrientationError(const Eigen::VectorXd& c)
-{
-    return -atan( c(1) );
-}
-
-
-//-----------------------------------------------------------------------------------------------------------
-
 int main()
 {
     uWS::Hub h;
@@ -132,30 +101,50 @@ int main()
 
                 if (event == "telemetry") {
                     // j[1] is the data JSON object
-                    const vector<double> ptsx = j[1]["ptsx"];
-                    const vector<double> ptsy = j[1]["ptsy"];
-                    const double px = j[1]["x"];
-                    const double py = j[1]["y"];
-                    const double psi = j[1]["psi"];
-                    const double v = j[1]["speed"];
+                    vector<double> ptsx = j[1]["ptsx"];
+                    vector<double> ptsy = j[1]["ptsy"];
+                    double px = j[1]["x"];
+                    double py = j[1]["y"];
+                    double psi = j[1]["psi"];
+                    double v = j[1]["speed"];
 
-                    const Eigen::MatrixXd trans_waypts = TransformWaypointsToVehicleCoords(ptsx, ptsy, px, py, psi);
-                    const Eigen::VectorXd coeffs = polyfit(trans_waypts.col(0), trans_waypts.col(1), 3);
-                    const double cte = polyeval(coeffs, 0);
-                    const double epsi = CalculateOrientationError(coeffs);
+                    //Account for 100 ms latency by projecting cars position by current velocity and heading
+                    px = px + .11*v*cos(psi);
+                    py = py + .11*v*sin(psi);
+
+                    for(int i = 0; i <ptsx.size(); i++)
+                    {
+                        double shift_x = ptsx[i]-px;
+                        double shift_y = ptsy[i]-py;
+
+                        ptsx[i] = (shift_x*cos(0-psi)-shift_y*sin(0-psi));
+                        ptsy[i] = (shift_x*sin(0-psi)+shift_y*cos(0-psi));
+                    }
+
+                    double* ptr = &ptsx[0];
+                    Eigen::Map<Eigen::VectorXd> xvals(ptr, 6);
+
+                    ptr = &ptsy[0];
+                    Eigen::Map<Eigen::VectorXd> yvals(ptr, 6);
+
+                    auto coeffs = polyfit(xvals,yvals,3);
+
+                    double cte = polyeval(coeffs, 0);
+                    double epsi = -atan(coeffs[1]);
+
+                    cout<< "cte/epsi:" << cte << "//" << epsi << "\n";
 
                     Eigen::VectorXd state(6);
-                    state << 0, 0, 0, v, cte, epsi;
-                    std::cout << state << std::endl << std::endl << coeffs;
+                    state << 0,0,0,v,cte,epsi;
+                    //vector<double> state = {};
+                    auto next_state = mpc.Solve(state, coeffs);
 
-                    const vector<double> results = mpc.Solve(state, coeffs);
+                    double Lf = 2.67;
 
-                    const double steer_value = rad2deg( results.at(0) ) / 25.;
-                    const double throttle_value = results.at(1);
+                    double steer_value =next_state[0]/(deg2rad(25)*Lf);
+                    double throttle_value = next_state[1];
 
                     json msgJson;
-                    // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
-                    // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
                     msgJson["steering_angle"] = steer_value;
                     msgJson["throttle"] = throttle_value;
 
@@ -163,18 +152,31 @@ int main()
                     vector<double> mpc_x_vals;
                     vector<double> mpc_y_vals;
 
+                    for(int i=2;i<16;i+=2)
+                    {
+                        mpc_x_vals.push_back(next_state[i]);
+                        mpc_y_vals.push_back(next_state[i+1]);
+                    }
+
                     //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
                     // the points in the simulator are connected by a Green line
 
                     msgJson["mpc_x"] = mpc_x_vals;
                     msgJson["mpc_y"] = mpc_y_vals;
 
-                    //Display the waypoints/reference line
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
 
                     //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
                     // the points in the simulator are connected by a Yellow line
+                    double increments = 3;
+                    int num_points = 20;
+
+                    for ( int i=1; i<num_points;i++)
+                    {
+                        next_x_vals.push_back(increments*i);
+                        next_y_vals.push_back(polyeval(coeffs,increments*i));
+                    }
 
                     msgJson["next_x"] = next_x_vals;
                     msgJson["next_y"] = next_y_vals;
