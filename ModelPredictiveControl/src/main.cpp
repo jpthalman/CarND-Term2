@@ -108,40 +108,35 @@ int main()
                     double psi = j[1]["psi"];
                     double v = j[1]["speed"];
 
-                    //Account for 100 ms latency by projecting cars position by current velocity and heading
-                    px = px + .11*v*cos(psi);
-                    py = py + .11*v*sin(psi);
+                    // Account for latency by predicting cars position with current velocity and angle
+                    px = px + 0.11 * v * cos(psi);
+                    py = py + 0.11 * v * sin(psi);
 
-                    for(int i = 0; i <ptsx.size(); i++)
+                    // Transform points to cars perspective
+                    const size_t sz = ptsx.size();
+                    for (int i = 0; i < sz; i++)
                     {
-                        double shift_x = ptsx[i]-px;
-                        double shift_y = ptsy[i]-py;
+                        const double
+                            shift_x = ptsx[i] - px,
+                            shift_y = ptsy[i] - py;
 
-                        ptsx[i] = (shift_x*cos(0-psi)-shift_y*sin(0-psi));
-                        ptsy[i] = (shift_x*sin(0-psi)+shift_y*cos(0-psi));
+                        ptsx[i] = shift_x * cos(-psi) - shift_y * sin(-psi);
+                        ptsy[i] = shift_x * sin(-psi) + shift_y * cos(-psi);
                     }
 
-                    double* ptr = &ptsx[0];
-                    Eigen::Map<Eigen::VectorXd> xvals(ptr, 6);
+                    Eigen::Map<Eigen::VectorXd> xvals(&ptsx[0], 6);
+                    Eigen::Map<Eigen::VectorXd> yvals(&ptsy[0], 6);
 
-                    ptr = &ptsy[0];
-                    Eigen::Map<Eigen::VectorXd> yvals(ptr, 6);
-
-                    auto coeffs = polyfit(xvals,yvals,3);
-
+                    auto coeffs = polyfit(xvals, yvals, 3);
                     double cte = polyeval(coeffs, 0);
                     double epsi = -atan(coeffs[1]);
 
-                    cout<< "cte/epsi:" << cte << "//" << epsi << "\n";
-
                     Eigen::VectorXd state(6);
-                    state << 0,0,0,v,cte,epsi;
-                    //vector<double> state = {};
+                    state << 0, 0, 0, v, cte, epsi;
+
                     auto next_state = mpc.Solve(state, coeffs);
 
-                    double Lf = 2.67;
-
-                    double steer_value =next_state[0]/(deg2rad(25)*Lf);
+                    double steer_value = next_state[0] / (deg2rad(25) * 2.67);
                     double throttle_value = next_state[1];
 
                     json msgJson;
@@ -152,7 +147,7 @@ int main()
                     vector<double> mpc_x_vals;
                     vector<double> mpc_y_vals;
 
-                    for(int i=2;i<16;i+=2)
+                    for(int i = 2; i < 16; i += 2)
                     {
                         mpc_x_vals.push_back(next_state[i]);
                         mpc_y_vals.push_back(next_state[i+1]);
@@ -164,18 +159,16 @@ int main()
                     msgJson["mpc_x"] = mpc_x_vals;
                     msgJson["mpc_y"] = mpc_y_vals;
 
+                    //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
+                    // the points in the simulator are connected by a Yellow line
+
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
 
-                    //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
-                    // the points in the simulator are connected by a Yellow line
-                    double increments = 3;
-                    int num_points = 20;
-
-                    for ( int i=1; i<num_points;i++)
+                    for (int i = 1; i < 20; i++)
                     {
-                        next_x_vals.push_back(increments*i);
-                        next_y_vals.push_back(polyeval(coeffs,increments*i));
+                        next_x_vals.push_back(3 * i);
+                        next_y_vals.push_back( polyeval(coeffs, 3 * i) );
                     }
 
                     msgJson["next_x"] = next_x_vals;
