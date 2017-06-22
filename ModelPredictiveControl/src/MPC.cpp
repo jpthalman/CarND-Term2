@@ -41,8 +41,8 @@ public:
         for (int i = 0; i < N; ++i)
         {
             // the part of the cost based on the reference state
-            fg[0] += 2000.0 * CppAD::pow(vars[idx_cte + i] - ref_cte, 2);
-            fg[0] += 2000.0 * CppAD::pow(vars[idx_epsi + i] - ref_epsi, 2);
+            fg[0] += 2100.0 * CppAD::pow(vars[idx_cte + i] - ref_cte, 2);
+            fg[0] += 1900.0 * CppAD::pow(vars[idx_epsi + i] - ref_epsi, 2);
             fg[0] += 2.0 * CppAD::pow(vars[idx_v + i] - ref_v, 2);
 
             // minimize the use of actuators
@@ -55,8 +55,8 @@ public:
             // minimize the value gap between sequential actuations
             if (i < N - 2)
             {
-                fg[0] += 500.0 * CppAD::pow(vars[idx_delta + i + 1] - vars[idx_delta + i], 2);
-                fg[0] += 5.0 * CppAD::pow(vars[idx_a + i + 1] - vars[idx_a + i], 2);
+                fg[0] += 490.0 * CppAD::pow(vars[idx_delta + i + 1] - vars[idx_delta + i], 2);
+                fg[0] += 4.8 * CppAD::pow(vars[idx_a + i + 1] - vars[idx_a + i], 2);
             }
         }
 
