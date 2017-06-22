@@ -109,8 +109,8 @@ int main()
                     double v = j[1]["speed"];
 
                     // Account for latency by predicting cars position with current velocity and angle
-                    px = px + 0.11 * v * cos(psi);
-                    py = py + 0.11 * v * sin(psi);
+                    px += 0.11 * v * cos(psi);
+                    py += 0.11 * v * sin(psi);
 
                     // Transform points to cars perspective
                     const size_t sz = ptsx.size();
