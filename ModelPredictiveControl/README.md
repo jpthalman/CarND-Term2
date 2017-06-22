@@ -3,6 +3,44 @@ Self-Driving Car Engineer Nanodegree Program
 
 ---
 
+## The Model
+The vehicle model used is based upon the following states:
+
+- X and Y position
+- Orientation (Psi)
+- Velocity
+- Cross Track Error
+- Orientation (Psi) Error
+
+The cross track error is calculated as the current distance of the car from the center of the road, which is provided as desired waypoints. The orientation error is calculated by differencing the desired orientation, again calculated with the waypoints, and the current orientation. 
+
+The outputs for the model are throttle and steering angle. Throttle is output between -1 and 1, which are full reverse and full forward respectively. Steering is bound between -25 and 25 degrees, converted to radians. Once output by the model, this value is normalized to be between -1 and 1. 
+
+To solve the equations for the optimal (lowest cost) path, the model uses an optimization algorithm provided by the library Ipopt. The cost function is defined in `MPC.cpp`, and is a combitation of the current:
+
+- Cross Track Error
+- Orientation Error
+- Velocity Error
+- Magnitude of Actuation's
+- Magnitude of Sequential Actuation's
+
+The combination of these costs, when minimized by Ipopt, provide a trajectory that should be aligned with the center of the track with very few "jerky" actuations. To fine-tune the costs, all of the elements are multiplied by a constant to get the right proportions of each. These values were tuned by hand and are available starting at line 44 in `MPC.cpp`.
+
+Once the initial solution is found by Ipopt, this solution is iteratively projected forward in time using the current actuations.
+
+## Timestep Length and Elapsed Duration
+
+My model uses a timestep of 0.1 seconds and a projection of 8 steps. When I tried to increase the timestep, the model tended to react slowly to the sharp turn after the bridge. When I tried to decrease the timestep, the model tended to get a bit "jerky". Increasing the projection steps had a similar effect to increasing the timesteps where it would react slowly to straightening out after the sharp turn. 
+
+## Latency
+   
+To simulate real world conditions, a 100ms latency is artificially introduced into the actuations. To deal with this, I projected the actual position of the vehicle forward 110ms using the following equations:
+
+- px += v * cos(psi) * dt
+- py += v * sin(psi) * dt
+
+The additional 10ms of latency is added in to account for the processing time of the algorithm. This could be calculated on the fly in the future to produce more accurate results.
+
 ## Dependencies
 
 * cmake >= 3.5
@@ -49,67 +87,3 @@ Self-Driving Car Engineer Nanodegree Program
 2. Make a build directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
 4. Run it: `./mpc`.
-
-## Tips
-
-1. It's recommended to test the MPC on basic examples to see if your implementation behaves as desired. One possible example
-is the vehicle starting offset of a straight line (reference). If the MPC implementation is correct, after some number of timesteps
-(not too many) it should find and track the reference line.
-2. The `lake_track_waypoints.csv` file has the waypoints of the lake track. You could use this to fit polynomials and points and see of how well your model tracks curve. NOTE: This file might be not completely in sync with the simulator so your solution should NOT depend on it.
-3. For visualization this C++ [matplotlib wrapper](https://github.com/lava/matplotlib-cpp) could be helpful.
-
-## Editor Settings
-
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-
-## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
-
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/b1ff3be0-c904-438e-aad3-2b5379f0e0c3/concepts/1a2255a0-e23c-44cf-8d41-39b8a3c8264a)
-for instructions and the project rubric.
-
-## Hints!
-
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
